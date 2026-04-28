@@ -78,6 +78,7 @@
   } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
   import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
 
   // 🔥 YOUR FIREBASE CONFIG
   const firebaseConfig = {
@@ -89,9 +90,16 @@
     appId: "1:867906265805:web:fef99742609ce5151e3f84"
   };
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+
+// 🔐 App Check (ADD THIS HERE)
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider('6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu'),
+  isTokenAutoRefreshEnabled: true
+});
+
+const auth = getAuth(app);
+const db = getFirestore(app);
 
   const msg = document.getElementById("msg");
 
