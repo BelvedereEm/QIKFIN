@@ -200,106 +200,132 @@ h3 {
 
 <!-- FIREBASE -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-  import {
-    getAuth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
 
-  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-  import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
 
-  // 🔥 YOUR FIREBASE CONFIG
-  const firebaseConfig = {
-    apiKey: "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
-    authDomain: "qikfin.firebaseapp.com",
-    projectId: "qikfin",
-    storageBucket: "qikfin.firebasestorage.app",
-    messagingSenderId: "867906265805",
-    appId: "1:867906265805:web:fef99742609ce5151e3f84"
-  };
+/* =========================
+   1. FIREBASE INIT
+========================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
+  authDomain: "qikfin.firebaseapp.com",
+  projectId: "qikfin",
+  storageBucket: "qikfin.firebasestorage.app",
+  messagingSenderId: "867906265805",
+  appId: "1:867906265805:web:fef99742609ce5151e3f84"
+};
 
 const app = initializeApp(firebaseConfig);
-
-// 🔐 App Check (ADD THIS HERE)
-initializeAppCheck(app, {
-  provider: new ReCaptchaV3Provider('6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu'),
-  isTokenAutoRefreshEnabled: true
-});
-
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-  const msg = document.getElementById("msg");
-  document.getElementById("showPassword").addEventListener("change", function () {
-  const passwordInput = document.getElementById("password");
-
-  if (this.checked) {
-    passwordInput.type = "text";
-  } else {
-    passwordInput.type = "password";
-  }
+initializeAppCheck(app, {
+  provider: new ReCaptchaV3Provider("6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu"),
+  isTokenAutoRefreshEnabled: true
 });
 
-  // SIGN UP
- document.getElementById("signupBtn").addEventListener("click", (e) => {
+/* =========================
+   2. UI ELEMENTS
+========================= */
+const authScreen = document.getElementById("auth");
+const dashboard = document.getElementById("dashboard");
+const msg = document.getElementById("msg");
+const userInfo = document.getElementById("userInfo");
+
+/* =========================
+   3. AUTH FUNCTIONS
+========================= */
+function signup(email, password) {
+  return createUserWithEmailAndPassword(auth, email, password);
+}
+
+function login(email, password) {
+  return signInWithEmailAndPassword(auth, email, password);
+}
+
+function logout() {
+  return signOut(auth);
+}
+
+/* =========================
+   4. UI STATE CONTROLLER
+========================= */
+function showApp(user) {
+  authScreen.style.display = "none";
+  dashboard.style.display = "block";
+  userInfo.textContent = "Logged in as: " + user.email;
+}
+
+function showAuth() {
+  authScreen.style.display = "block";
+  dashboard.style.display = "none";
+  msg.textContent = "";
+}
+
+/* =========================
+   5. EVENT LISTENERS
+========================= */
+
+// LOGIN FORM
+document.getElementById("loginForm").addEventListener("submit", (e) => {
   e.preventDefault();
 
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
-  createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      msg.innerText = "Account created!";
+  login(email, password).catch((err) => {
+    msg.textContent = err.message;
+  });
+});
+
+// SIGN UP
+document.getElementById("signupBtn").addEventListener("click", (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  signup(email, password)
+    .then(() => {
+      msg.textContent = "Account created!";
     })
-    .catch((error) => {
-      msg.innerText = error.message;
+    .catch((err) => {
+      msg.textContent = err.message;
     });
 });
 
-  // LOGIN
- document.getElementById("loginForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  signInWithEmailAndPassword(auth, email, password)
-    .catch((error) => {
-      document.getElementById("msg").innerText = error.message;
-    });
+// LOGOUT
+document.getElementById("logoutBtn").addEventListener("click", () => {
+  logout();
 });
 
-  //Logout Button
-window.addEventListener("DOMContentLoaded", () => {
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      signOut(auth);
-    });
-  }
+// PASSWORD TOGGLE
+document.getElementById("showPassword").addEventListener("change", function () {
+  const pw = document.getElementById("password");
+  pw.type = this.checked ? "text" : "password";
 });
 
-  // AUTH STATE (controls UI)
+/* =========================
+   6. AUTH STATE LISTENER
+========================= */
 onAuthStateChanged(auth, (user) => {
   if (user) {
-    document.getElementById("auth").style.display = "none";
-    document.getElementById("dashboard").style.display = "block";
-
-    document.getElementById("userInfo").innerText =
-      "Logged in as: " + user.email;
-
+    showApp(user);
   } else {
-    document.getElementById("auth").style.display = "block";
-    document.getElementById("dashboard").style.display = "none";
+    showAuth();
   }
 });
 
-  console.log("QIKFIN loaded");
+console.log("QIKFIN app initialized cleanly");
 </script>
 
 </body>
