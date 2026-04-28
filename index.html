@@ -165,6 +165,11 @@
       <h3>Available</h3>
       <p id="availableBalance">$0.00</p>
     </div>
+ 
+    <div class="balanceBox">
+  <h3>Left Until Next Paycheck</h3>
+  <p id="leftToSpend">$0.00</p>
+</div>
 
     <button id="goTx" class="primary">Transactions</button>
     <button id="logoutBtn" class="secondary">Logout</button>
@@ -277,7 +282,40 @@ function show(pageId) {
       document.getElementById("savingsBalance").textContent = "$" + savings.toFixed(2);
       document.getElementById("availableBalance").textContent = "$" + currentBalance.toFixed(2);
     }
+    /* =========================
+       3.5 Balance Left to spend
+    ========================= */
+    async function calculateLeftToSpend(uid) {
+  const now = new Date();
 
+  // GET PAYCHECK
+  const paySnap = await getDocs(collection(db, "users", uid, "paychecks"));
+  if (paySnap.empty) return;
+
+  const paycheck = paySnap.docs[0].data();
+  const nextPayDate = paycheck.nextDate.toDate();
+  const paycheckAmount = paycheck.amount;
+
+  // GET BILLS
+  const billSnap = await getDocs(collection(db, "users", uid, "bills"));
+
+  let upcomingBills = 0;
+
+  billSnap.forEach(doc => {
+    const bill = doc.data();
+    const due = bill.dueDate.toDate();
+
+    // if bill is due before next paycheck
+    if (due <= nextPayDate && due >= now) {
+      upcomingBills += bill.amount;
+    }
+  });
+
+  const left = paycheckAmount - upcomingBills;
+
+  document.getElementById("leftToSpend").innerText =
+    "$" + left.toFixed(2);
+}
     /* =========================
        4. TRANSACTIONS
     ========================= */
@@ -365,6 +403,7 @@ onAuthStateChanged(auth, (user) => {
 
     show("dashboard");
     calculateBalances(user.uid);
+    calculateLeftToSpend(user.uid); 
   } else {
     show("auth");
   }
