@@ -189,9 +189,19 @@ h3 {
     <p id="userInfo"></p>
 
     <div class="balance">
-      <h3>Balance</h3>
-      <p>$0.00</p>
-    </div>
+  <h3>Current Balance</h3>
+  <p id="currentBalance">$0.00</p>
+</div>
+
+<div class="balance">
+  <h3>Savings Balance</h3>
+  <p id="savingsBalance">$0.00</p>
+</div>
+
+<div class="balance">
+  <h3>Available Balance</h3>
+  <p id="availableBalance">$0.00</p>
+</div>
 
     <button id="addTxnBtn">+ Add Transaction</button>
     <button id="logoutBtn">Logout</button>
@@ -214,6 +224,8 @@ import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com
 import {
   doc,
   setDoc,
+  getDocs, 
+  query,
   collection,
   addDoc,
   serverTimestamp
@@ -338,10 +350,51 @@ document.getElementById("showPassword").addEventListener("change", function () {
 onAuthStateChanged(auth, (user) => {
   if (user) {
     showApp(user);
+    calculateBalances(user.uid);
   } else {
     showAuth();
   }
 });
+
+  //Balances 
+  async function calculateBalances(uid) {
+  const txRef = collection(db, "users", uid, "transactions");
+  const snapshot = await getDocs(query(txRef));
+
+  let income = 0;
+  let expenses = 0;
+  let savings = 0;
+
+  snapshot.forEach((doc) => {
+    const data = doc.data();
+
+    if (data.type === "income") {
+      income += data.amount;
+    }
+
+    if (data.type === "expense") {
+      expenses += data.amount;
+    }
+
+    if (data.type === "transfer") {
+      // optional later: handle savings properly
+      if (data.to === "savings") savings += data.amount;
+      if (data.from === "savings") savings -= data.amount;
+    }
+  });
+
+  const currentBalance = income - expenses;
+  const availableBalance = currentBalance;
+
+  document.getElementById("currentBalance").innerText =
+    "$" + currentBalance.toFixed(2);
+
+  document.getElementById("savingsBalance").innerText =
+    "$" + savings.toFixed(2);
+
+  document.getElementById("availableBalance").innerText =
+    "$" + availableBalance.toFixed(2);
+}
   //ADD TRANSACTIONS
 async function addTransaction(uid, data) {
   const ref = collection(db, "users", uid, "transactions");
