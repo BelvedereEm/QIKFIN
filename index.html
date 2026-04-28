@@ -203,7 +203,23 @@ h3 {
   <p id="availableBalance">$0.00</p>
 </div>
 
-    <button id="addTxnBtn">+ Add Transaction</button>
+    <div class="balance">
+  <h3>Add Transaction</h3>
+
+  <select id="type">
+    <option value="expense">Expense</option>
+    <option value="income">Income</option>
+    <option value="transfer">Transfer</option>
+  </select>
+
+  <input id="amount" type="number" placeholder="Amount">
+
+  <input id="category" type="text" placeholder="Category">
+
+  <input id="note" type="text" placeholder="Note">
+
+  <button id="addTxnBtn">Save</button>
+</div>
     <button id="logoutBtn">Logout</button>
   </div>
 </div>
@@ -403,17 +419,29 @@ async function addTransaction(uid, data) {
     date: serverTimestamp()
   });
 }
-  document.getElementById("addTxnBtn").addEventListener("click", async () => {
+document.getElementById("addTxnBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
-
   if (!user) return;
 
+  const type = document.getElementById("type").value;
+  const amount = Number(document.getElementById("amount").value);
+  const category = document.getElementById("category").value;
+  const note = document.getElementById("note").value;
+
+  if (!amount || amount <= 0) return;
+
   await addTransaction(user.uid, {
-    type: "expense",
-    amount: 10,
-    category: "test",
-    note: "Manual test"
+    type,
+    amount,
+    category,
+    note
   });
+
+  console.log("Transaction added");
+
+  // refresh balances immediately
+  calculateBalances(user.uid);
+});
 
   console.log("Transaction added");
 });
