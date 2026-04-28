@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Private App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial; text-align: center; padding: 40px; }
+    #app { display: none; }
+    input { padding: 10px; margin: 10px; }
+    button { padding: 10px 15px; }
+  </style>
+</head>
+<body>
+
+<div id="login">
+  <h2>Enter Password</h2>
+  <input type="password" id="password" placeholder="Password">
+  <button onclick="checkPassword()">Enter</button>
+</div>
+
+<div id="app">
+  <h1>Welcome 👋</h1>
+  <p>This is your private space.</p>
+</div>
+
+<script>
+function checkPassword() {
+  const pass = document.getElementById("password").value;
+  if (pass === "DataBreach88!") {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  } else {
+    alert("Wrong password");
+  }
+}
+</script>
+
+</body>
+</html>
