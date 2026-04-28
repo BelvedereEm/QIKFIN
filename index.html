@@ -3,36 +3,147 @@
 <head>
   <title>QIKFIN</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <style>
-    body { font-family: Arial; text-align: center; padding: 40px; }
-    #app { display: none; }
-    input { padding: 10px; margin: 10px; }
-    button { padding: 10px 15px; }
+    body {
+      font-family: Arial;
+      text-align: center;
+      padding: 30px;
+      background: #f5f5f5;
+    }
+
+    input {
+      padding: 10px;
+      margin: 8px;
+      width: 200px;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    #app {
+      display: none;
+      margin-top: 30px;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      display: inline-block;
+      min-width: 250px;
+    }
   </style>
 </head>
+
 <body>
 
-<div id="login">
-  <h2>Enter Password</h2>
-  <input type="password" id="password" placeholder="Password">
-  <button onclick="checkPassword()">Enter</button>
+<h1>QIKFIN</h1>
+
+<!-- LOGIN / SIGNUP -->
+<div id="auth">
+  <h3>Login or Sign Up</h3>
+
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Password"><br>
+
+  <button id="loginBtn">Login</button>
+  <button id="signupBtn">Sign Up</button>
+
+  <p id="msg"></p>
 </div>
 
+<!-- APP -->
 <div id="app">
-  <h1>Welcome 👋</h1>
-  <p>QIKFIN   a financial application</p>
+  <div class="card">
+    <h2>Welcome 👋</h2>
+    <p id="userInfo"></p>
+
+    <button id="logoutBtn">Logout</button>
+  </div>
 </div>
 
-<script>
-function checkPassword() {
-  const pass = document.getElementById("password").value;
-  if (pass === "12345") {
-    document.getElementById("login").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  } else {
-    alert("Wrong password");
-  }
-}
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+  // 🔥 YOUR FIREBASE CONFIG
+  const firebaseConfig = {
+    apiKey: "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
+    authDomain: "qikfin.firebaseapp.com",
+    projectId: "qikfin",
+    storageBucket: "qikfin.firebasestorage.app",
+    messagingSenderId: "867906265805",
+    appId: "1:867906265805:web:fef99742609ce5151e3f84"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const msg = document.getElementById("msg");
+
+  // SIGN UP
+  document.getElementById("signupBtn").onclick = () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        msg.innerText = "Account created!";
+      })
+      .catch((error) => {
+        msg.innerText = error.message;
+      });
+  };
+
+  // LOGIN
+  document.getElementById("loginBtn").onclick = () => {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        msg.innerText = "Logged in!";
+      })
+      .catch((error) => {
+        msg.innerText = error.message;
+      });
+  };
+
+  // LOGOUT
+  document.getElementById("logoutBtn").onclick = () => {
+    signOut(auth);
+  };
+
+  // AUTH STATE (controls UI)
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("app").style.display = "block";
+
+      document.getElementById("userInfo").innerText =
+        "Logged in as: " + user.email;
+
+    } else {
+      document.getElementById("auth").style.display = "block";
+      document.getElementById("app").style.display = "none";
+    }
+  });
+
+  console.log("QIKFIN loaded");
 </script>
 
 </body>
