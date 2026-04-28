@@ -36,15 +36,25 @@
       display: inline-block;
       min-width: 250px;
     }
-
-    label {
-  display: inline-flex;
+.show-password {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  margin-top: 8px;
 }
 
+.show-password input {
+  margin: 0;
+}
 label input {
   margin: 0;
+}
+    #auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
   </style>
 </head>
@@ -60,7 +70,7 @@ label input {
   <input type="email" id="email" placeholder="Email"><br>
   <input type="password" id="password" placeholder="Password"><br>
 
-<label>
+<label class="show-password">
   <input type="checkbox" id="showPassword">
   Show Password
 </label>
