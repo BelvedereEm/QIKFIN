@@ -14,93 +14,55 @@
     justify-content: center;
   }
 
-  h1 {
-    position: absolute;
-    top: 20px;
-  }
 
-  /* LOGIN CARD */
   #auth {
-    width: 100%;
-    max-width: 340px;
-    background: white;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 320px;
+  margin: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  #auth h3 {
-    margin: 0 0 10px 0;
-    text-align: center;
-  }
-
-  /* INPUTS */
-  #auth input {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    box-sizing: border-box;
-  }
-
-  /* PASSWORD TOGGLE */
-  .show-password {
   display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 6px;
-  font-size: 13px;
-  margin-top: -2px;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.show-password input {
+/* smaller inputs */
+#auth input[type="email"],
+#auth input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+/* password row */
+.password-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* shrink password input so checkbox fits nicely */
+.password-row input[type="password"] {
+  flex: 1;
+}
+
+/* checkbox styling */
+.password-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   margin: 0;
 }
 
-  /* BUTTONS */
-  button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-  }
-
-  #loginBtn {
-    background: #2d6cdf;
-    color: white;
-  }
-
-  #signupBtn {
-    background: #e9e9e9;
-  }
-
-  /* APP */
-  #app {
-    display: none;
-    width: 100%;
-    max-width: 340px;
-  }
-
-  .card {
-    background: white;
-    padding: 20px;
-    border-radius: 14px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    text-align: center;
-  }
-
-  #logoutBtn {
-    margin-top: 10px;
-    background: #ff4d4d;
-    color: white;
-  }
+/* buttons */
+button {
+  width: 100%;
+  padding: 10px;
+  cursor: pointer;
+}
 </style>
 </head>
 
@@ -108,15 +70,13 @@
 
 <!-- LOGIN / SIGNUP -->
 <div id="auth">
-  <h3>Welcome to QIKFIN</h3>
+  <h3>Login or Sign Up</h3>
 
   <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
 
-  <!-- FIXED TOGGLE ROW -->
-  <div class="show-password">
+  <div class="password-row">
+    <input type="password" id="password" placeholder="Password">
     <input type="checkbox" id="showPassword">
-    <label for="showPassword">Show Password</label>
   </div>
 
   <button id="loginBtn">Login</button>
