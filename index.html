@@ -120,6 +120,24 @@ h3 {
   color: rgba(255,255,255,0.7);
   text-align: center;
 }
+
+   .card {
+  background: #111c33;
+  padding: 20px;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 340px;
+  margin: auto;
+  text-align: center;
+  color: white;
+}
+
+.balance {
+  margin: 20px 0;
+  padding: 15px;
+  border-radius: 12px;
+  background: #0b1220;
+}
 </style>
 </head>
 
@@ -142,6 +160,23 @@ h3 {
   <button id="signupBtn">Sign Up</button>
 
   <p id="msg"></p>
+</div>
+
+  <!-- DASHBOARD / MAIN PAGE -->
+  <div id="dashboard" style="display:none;">
+  <div class="card">
+    <h2>Dashboard</h2>
+
+    <p id="userInfo"></p>
+
+    <div class="balance">
+      <h3>Balance</h3>
+      <p>$0.00</p>
+    </div>
+
+    <button id="addTxnBtn">+ Add Transaction</button>
+    <button id="logoutBtn2">Logout</button>
+  </div>
 </div>
 
 <!-- FIREBASE -->
@@ -219,24 +254,24 @@ const db = getFirestore(app);
   };
 
   // LOGOUT
-  document.getElementById("logoutBtn").onclick = () => {
-    signOut(auth);
-  };
+  document.getElementById("logoutBtn2").onclick = () => {
+  signOut(auth);
+};
 
   // AUTH STATE (controls UI)
-  onAuthStateChanged(auth, (user) => {
-    if (user) {
-      document.getElementById("auth").style.display = "none";
-      document.getElementById("app").style.display = "block";
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById("auth").style.display = "none";
+    document.getElementById("dashboard").style.display = "block";
 
-      document.getElementById("userInfo").innerText =
-        "Logged in as: " + user.email;
+    document.getElementById("userInfo").innerText =
+      "Logged in as: " + user.email;
 
-    } else {
-      document.getElementById("auth").style.display = "block";
-      document.getElementById("app").style.display = "none";
-    }
-  });
+  } else {
+    document.getElementById("auth").style.display = "block";
+    document.getElementById("dashboard").style.display = "none";
+  }
+});
 
   console.log("QIKFIN loaded");
 </script>
