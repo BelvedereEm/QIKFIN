@@ -42,15 +42,17 @@
 
     /* SHOW PASSWORD */
     .show-password {
-      display: flex;
-      align-items: center;
-      gap: 0px;
-      font-size: 14px;
-    }
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;   /* 🔥 this is the key fix */
+  font-size: 14px;
+}
 
-    .show-password input {
-      margin: 0;
-    }
+.show-password input {
+  margin: 0;
+  padding: 0;
+}
 
     /* APP */
     #app {
@@ -81,7 +83,7 @@
 
 <label class="show-password">
   <input type="checkbox" id="showPassword">
-  Show Password
+  <span>Show Password</span>
 </label>
 
   <button id="loginBtn">Login</button>
