@@ -33,9 +33,7 @@ body {
 }
 
 /* INPUTS */
-#auth input[type="email"],
-#auth input[type="password"]
-#auth input[type="text"]{
+.qik-input {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
@@ -43,7 +41,9 @@ body {
   background: #0b1220;
   color: white;
   font-size: 14px;
-  transistion: border 0.15s ease, background .015s ease;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 /* PASSWORD ROW */
@@ -108,12 +108,12 @@ h1, h2, h3 {
   <h2>QIKFIN</h2>
   <h3>Login or Sign Up</h3>
 
-  <input type="email" id="email" placeholder="Email">
+<input type="email" id="email" class="qik-input" placeholder="Email">
 
-  <div class="password-row">
-    <input type="password" id="password" placeholder="Password">
-    <input type="checkbox" id="showPassword">
-  </div>
+<div class="password-row">
+  <input type="password" id="password" class="qik-input" placeholder="Password">
+  <input type="checkbox" id="showPassword">
+</div>
 
   <button id="loginBtn">Login</button>
   <button id="signupBtn">Sign Up</button>
