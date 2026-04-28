@@ -211,7 +211,15 @@ import {
 
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
-
+import { doc, setDoc, serverTimestamp } 
+from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  import {
+  doc,
+  collection,
+  addDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  
 /* =========================
    1. FIREBASE INIT
 ========================= */
@@ -295,9 +303,19 @@ document.getElementById("signupBtn").addEventListener("click", (e) => {
   const password = document.getElementById("password").value;
 
   signup(email, password)
-    .then(() => {
-      msg.textContent = "Account created!";
-    })
+  .then(async (cred) => {
+    const user = cred.user;
+
+    await setDoc(doc(db, "users", user.uid), {
+      email: user.email,
+      availableBalance: 0,
+      currentBalance: 0,
+      savingsBalance: 0,
+      createdAt: serverTimestamp()
+    });
+
+    msg.textContent = "Account created!";
+  })
     .catch((err) => {
       msg.textContent = err.message;
     });
@@ -324,7 +342,28 @@ onAuthStateChanged(auth, (user) => {
     showAuth();
   }
 });
+  //ADD TRANSACTIONS
+async function addTransaction(uid, data) {
+  const ref = collection(db, "users", uid, "transactions");
+  await addDoc(ref, {
+    ...data,
+    date: serverTimestamp()
+  });
+}
+  document.getElementById("addTxnBtn").addEventListener("click", async () => {
+  const user = auth.currentUser;
 
+  if (!user) return;
+
+  await addTransaction(user.uid, {
+    type: "expense",
+    amount: 10,
+    category: "test",
+    note: "Manual test"
+  });
+
+  console.log("Transaction added");
+});
 console.log("QIKFIN app initialized cleanly");
 </script>
 
