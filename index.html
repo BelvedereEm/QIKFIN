@@ -50,16 +50,17 @@
 
   /* PASSWORD TOGGLE */
   .show-password {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    margin-top: -4px;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  margin-top: -2px;
+}
 
-  .show-password input {
-    margin: 0;
-  }
+.show-password input {
+  margin: 0;
+}
 
   /* BUTTONS */
   button {
@@ -105,8 +106,6 @@
 
 <body>
 
-<h1>QIKFIN</h1>
-
 <!-- LOGIN / SIGNUP -->
 <div id="auth">
   <h3>Welcome to QIKFIN</h3>
@@ -114,10 +113,11 @@
   <input type="email" id="email" placeholder="Email">
   <input type="password" id="password" placeholder="Password">
 
-  <label class="show-password">
+  <!-- FIXED TOGGLE ROW -->
+  <div class="show-password">
     <input type="checkbox" id="showPassword">
-    Show Password
-  </label>
+    <label for="showPassword">Show Password</label>
+  </div>
 
   <button id="loginBtn">Login</button>
   <button id="signupBtn">Sign Up</button>
