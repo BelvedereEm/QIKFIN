@@ -211,10 +211,9 @@ import {
 
 import { getFirestore } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 import { initializeAppCheck, ReCaptchaV3Provider } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
-import { doc, setDoc, serverTimestamp } 
-from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-  import {
+import {
   doc,
+  setDoc,
   collection,
   addDoc,
   serverTimestamp
@@ -233,13 +232,14 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-initializeAppCheck(app, {
+  initializeAppCheck(app, {
   provider: new ReCaptchaV3Provider("6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu"),
   isTokenAutoRefreshEnabled: true
 });
+
+const auth = getAuth(app);
+const db = getFirestore(app);
+
 
 /* =========================
    2. UI ELEMENTS
