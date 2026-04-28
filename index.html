@@ -194,7 +194,7 @@ h3 {
     </div>
 
     <button id="addTxnBtn">+ Add Transaction</button>
-    <button id="logoutBtn2">Logout</button>
+    <button id="logoutBtn">Logout</button>
   </div>
 </div>
 
@@ -245,18 +245,20 @@ const db = getFirestore(app);
 });
 
   // SIGN UP
-  document.getElementById("signupBtn").onclick = () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+ document.getElementById("signupBtn").addEventListener("click", (e) => {
+  e.preventDefault();
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
-        msg.innerText = "Account created!";
-      })
-      .catch((error) => {
-        msg.innerText = error.message;
-      });
-  };
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      msg.innerText = "Account created!";
+    })
+    .catch((error) => {
+      msg.innerText = error.message;
+    });
+});
 
   // LOGIN
  document.getElementById("loginForm").addEventListener("submit", (e) => {
@@ -269,6 +271,17 @@ const db = getFirestore(app);
     .catch((error) => {
       document.getElementById("msg").innerText = error.message;
     });
+});
+
+  //Logout Button
+window.addEventListener("DOMContentLoaded", () => {
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", () => {
+      signOut(auth);
+    });
+  }
 });
 
   // AUTH STATE (controls UI)
