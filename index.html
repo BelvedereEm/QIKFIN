@@ -149,17 +149,36 @@ h3 {
   <h2>QIKFIN</h2>
   <h3>Login or Sign Up</h3>
 
-<input type="email" id="email" class="qik-input" placeholder="Email">
+  <form id="loginForm">
+
+    <input 
+  type="email" 
+  id="email" 
+  name="email"
+  class="qik-input" 
+  placeholder="Email"
+  autocomplete="username"
+>
 
 <div class="password-row">
-  <input type="password" id="password" class="qik-input" placeholder="Password">
+  <input 
+    type="password" 
+    id="password" 
+    name="password"
+    class="qik-input" 
+    placeholder="Password"
+    autocomplete="current-password"
+  >
+
   <input type="checkbox" id="showPassword">
 </div>
 
-  <button id="loginBtn">Login</button>
-  <button id="signupBtn">Sign Up</button>
+    <button type="submit" id="loginBtn">Login</button>
+    <button type="button" id="signupBtn">Sign Up</button>
 
-  <p id="msg"></p>
+    <p id="msg"></p>
+
+  </form>
 </div>
 
   <!-- DASHBOARD / MAIN PAGE -->
@@ -240,23 +259,17 @@ const db = getFirestore(app);
   };
 
   // LOGIN
-  document.getElementById("loginBtn").onclick = () => {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+ document.getElementById("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        msg.innerText = "Logged in!";
-      })
-      .catch((error) => {
-        msg.innerText = error.message;
-      });
-  };
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-  // LOGOUT
-  document.getElementById("logoutBtn2").onclick = () => {
-  signOut(auth);
-};
+  signInWithEmailAndPassword(auth, email, password)
+    .catch((error) => {
+      document.getElementById("msg").innerText = error.message;
+    });
+});
 
   // AUTH STATE (controls UI)
 onAuthStateChanged(auth, (user) => {
