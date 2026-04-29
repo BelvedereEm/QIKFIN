@@ -198,9 +198,17 @@
 
   <input id="payAmount" type="number" class="qik-input" placeholder="Amount">
   <input id="payDate" type="date" class="qik-input">
-
+  <select id="payFrequency" class="qik-input">
+  <option value="weekly">Weekly</option>
+  <option value="biweekly">Biweekly</option>
+  <option value="monthly">Monthly</option>
+</select>
   <button id="savePayBtn" class="primary">Save</button>
   <button class="back secondary">Back</button>
+</div>
+  <div class="balanceBox">
+  <h3>Saved Paycheck</h3>
+  <p id="paycheckDisplay">None</p>
 </div>
 
   <!-- FIREBASE -->
@@ -299,6 +307,26 @@ function show(pageId) {
     async function calculateLeftToSpend(uid) {
   const now = new Date();
 
+    /* =========================
+       3.6 Display Paycheck
+    ========================= */
+      async function loadPaycheck(uid) {
+  const snap = await getDocs(collection(db, "users", uid, "paychecks"));
+
+  if (snap.empty) {
+    document.getElementById("paycheckDisplay").innerText = "None";
+    return;
+  }
+
+  // get latest paycheck (last added)
+  const docs = snap.docs;
+  const latest = docs[docs.length - 1].data();
+
+  const date = latest.nextDate.toDate().toLocaleDateString();
+
+  document.getElementById("paycheckDisplay").innerText =
+    `$${latest.amount.toFixed(2)} • ${latest.frequency} • ${date}`;
+}
   // GET PAYCHECK
   const paySnap = await getDocs(collection(db, "users", uid, "paychecks"));
   if (paySnap.empty) return;
@@ -307,6 +335,8 @@ function show(pageId) {
   const nextPayDate = paycheck.nextDate.toDate();
   const paycheckAmount = paycheck.amount;
 
+
+      
   // GET BILLS
   const billSnap = await getDocs(collection(db, "users", uid, "bills"));
 
@@ -398,21 +428,26 @@ function show(pageId) {
     document.querySelectorAll(".back").forEach(btn => {
       btn.addEventListener("click", () => show("dashboard"));
     });
-    document.getElementById("savePayBtn").addEventListener("click", async () => {
+document.getElementById("savePayBtn").addEventListener("click", async () => {
   const user = auth.currentUser;
   if (!user) return;
 
   const amount = Number(document.getElementById("payAmount").value);
-  const date = new Date(document.getElementById("payDate").value);
+  const date = document.getElementById("payDate").value;
+  const frequency = document.getElementById("payFrequency").value;
 
   if (!amount || !date) return;
 
   await addDoc(collection(db, "users", user.uid, "paychecks"), {
     amount,
-    nextDate: date
+    frequency,
+    nextDate: new Date(date),
+    createdAt: serverTimestamp()
   });
 
   alert("Paycheck saved!");
+
+  loadPaycheck(user.uid); // 👈 refresh display immediately
 });
 
     /* =========================
@@ -431,6 +466,7 @@ onAuthStateChanged(auth, (user) => {
     show("dashboard");
     calculateBalances(user.uid);
     calculateLeftToSpend(user.uid); 
+    loadPaycheck(user.uid);
   } else {
     show("auth");
   }
