@@ -17,7 +17,7 @@
       min-height: 100vh;
     }
 
-    /* CARD */
+    /* ── CARD ── */
     .card {
       width: 100%;
       max-width: 340px;
@@ -31,7 +31,7 @@
       text-align: center;
     }
 
-    /* INPUTS */
+    /* ── INPUTS ── */
     .qik-input, select {
       width: 100%;
       padding: 12px;
@@ -44,7 +44,7 @@
       appearance: none;
     }
 
-    /* PASSWORD ROW */
+    /* ── PASSWORD ROW ── */
     .password-row {
       display: flex;
       align-items: center;
@@ -64,7 +64,7 @@
       cursor: pointer;
     }
 
-    /* BUTTONS */
+    /* ── BUTTONS ── */
     button {
       width: 100%;
       padding: 12px;
@@ -86,12 +86,13 @@
       border: 1px solid #2a3b5a;
     }
 
-    /* TEXT */
+    /* ── TYPOGRAPHY ── */
     h1, h2, h3 { color: white; margin: 0; text-align: center; }
-    h2 { font-size: 28px; font-weight: 700; }
-    h1 { font-size: 14px; font-weight: 500; opacity: 0.7; margin-bottom: -4px; }
-    h3 { font-size: 14px; font-weight: 500; opacity: 0.8; margin-top: 6px; }
+    h2  { font-size: 28px; font-weight: 700; }
+    h1  { font-size: 14px; font-weight: 500; opacity: 0.7; margin-bottom: -4px; }
+    h3  { font-size: 14px; font-weight: 500; opacity: 0.8; margin-top: 6px; }
 
+    /* ── MISC ── */
     #msg {
       font-size: 13px;
       color: rgba(255,255,255,0.7);
@@ -104,14 +105,15 @@
       border-radius: 12px;
     }
 
-    /* HIDE PAGES */
     .page { display: none; }
   </style>
 </head>
 
 <body>
 
-  <!-- AUTH PAGE -->
+  <!-- ════════════════════════
+       AUTH PAGE
+  ════════════════════════ -->
   <div id="auth" class="card page">
     <h1>Welcome to</h1>
     <h2>QIKFIN</h2>
@@ -119,21 +121,15 @@
 
     <form id="loginForm" autocomplete="on">
       <input
-        type="email"
-        id="email"
-        name="email"
-        class="qik-input"
-        placeholder="Email"
+        type="email" id="email" name="email"
+        class="qik-input" placeholder="Email"
         autocomplete="username"
       >
 
       <div class="password-row">
         <input
-          type="password"
-          id="password"
-          name="password"
-          class="qik-input"
-          placeholder="Password"
+          type="password" id="password" name="password"
+          class="qik-input" placeholder="Password"
           autocomplete="current-password"
         >
         <input type="checkbox" id="showPassword" title="Show password">
@@ -141,12 +137,13 @@
 
       <button type="submit" class="primary">Login</button>
       <button type="button" id="signupBtn" class="secondary">Sign Up</button>
-
       <p id="msg"></p>
     </form>
   </div>
 
-  <!-- DASHBOARD PAGE -->
+  <!-- ════════════════════════
+       DASHBOARD PAGE
+  ════════════════════════ -->
   <div id="dashboard" class="card page">
     <h2>Dashboard</h2>
     <p id="userInfo"></p>
@@ -165,17 +162,20 @@
       <h3>Available</h3>
       <p id="availableBalance">$0.00</p>
     </div>
- 
+
     <div class="balanceBox">
-  <h3>Left Until Next Paycheck</h3>
-  <p id="leftToSpend">$0.00</p>
-</div>
+      <h3>Left Until Next Paycheck</h3>
+      <p id="leftToSpend">$0.00</p>
+    </div>
+
     <button id="goPay" class="primary">Paycheck</button>
-    <button id="goTx" class="primary">Transactions</button>
+    <button id="goTx"  class="primary">Transactions</button>
     <button id="logoutBtn" class="secondary">Logout</button>
   </div>
 
-  <!-- TRANSACTIONS PAGE -->
+  <!-- ════════════════════════
+       TRANSACTIONS PAGE
+  ════════════════════════ -->
   <div id="txPage" class="card page">
     <h2>Transactions</h2>
 
@@ -185,33 +185,42 @@
       <option value="transfer">Transfer</option>
     </select>
 
-    <input id="amount" type="number" class="qik-input" placeholder="Amount">
+    <input id="amount"   type="number" class="qik-input" placeholder="Amount">
     <input id="category" class="qik-input" placeholder="Category">
-    <input id="note" class="qik-input" placeholder="Note">
+    <input id="note"     class="qik-input" placeholder="Note">
 
     <button id="addTxnBtn" class="primary">Save</button>
     <button class="back secondary">Back</button>
   </div>
-<!-- PAYCHECK PAGE -->
-<div id="payPage" class="card page">
-  <h2>Paycheck Setup</h2>
 
-  <input id="payAmount" type="number" class="qik-input" placeholder="Amount">
-  <input id="payDate" type="date" class="qik-input">
-  <select id="payFrequency" class="qik-input">
-  <option value="weekly">Weekly</option>
-  <option value="biweekly">Biweekly</option>
-  <option value="monthly">Monthly</option>
-</select>
-  <button id="savePayBtn" class="primary">Save</button>
-  <button class="back secondary">Back</button>
-</div>
-  <div class="balanceBox">
-  <h3>Saved Paycheck</h3>
-  <p id="paycheckDisplay">None</p>
-</div>
+  <!-- ════════════════════════
+       PAYCHECK PAGE
+  ════════════════════════ -->
+  <div id="payPage" class="card page">
+    <h2>Paycheck Setup</h2>
 
-  <!-- FIREBASE -->
+    <input id="payAmount" type="number" class="qik-input" placeholder="Amount">
+    <input id="payDate"   type="date"   class="qik-input">
+
+    <select id="payFrequency" class="qik-input">
+      <option value="weekly">Weekly</option>
+      <option value="biweekly">Biweekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
+
+    <button id="savePayBtn" class="primary">Save</button>
+
+    <div class="balanceBox">
+      <h3>Saved Paycheck</h3>
+      <p id="paycheckDisplay">None</p>
+    </div>
+
+    <button class="back secondary">Back</button>
+  </div>
+
+  <!-- ════════════════════════
+       FIREBASE
+  ════════════════════════ -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
     import {
@@ -223,190 +232,172 @@
     } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
     import {
       getFirestore,
-      doc,
-      setDoc,
-      getDocs,
-      query,
-      collection,
-      addDoc,
-      serverTimestamp
+      doc, setDoc, getDocs, query,
+      collection, addDoc, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
     import {
       initializeAppCheck,
       ReCaptchaV3Provider
     } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
 
-    /* =========================
-       1. FIREBASE INIT
-    ========================= */
-    const firebaseConfig = {
-      apiKey: "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
-      authDomain: "qikfin.firebaseapp.com",
-      projectId: "qikfin",
-      storageBucket: "qikfin.firebasestorage.app",
+    /* ── 1. INIT ── */
+    const app = initializeApp({
+      apiKey:            "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
+      authDomain:        "qikfin.firebaseapp.com",
+      projectId:         "qikfin",
+      storageBucket:     "qikfin.firebasestorage.app",
       messagingSenderId: "867906265805",
-      appId: "1:867906265805:web:fef99742609ce5151e3f84"
-    };
+      appId:             "1:867906265805:web:fef99742609ce5151e3f84"
+    });
 
-    const app = initializeApp(firebaseConfig);
     initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider("6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu"),
       isTokenAutoRefreshEnabled: true
     });
 
     const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db   = getFirestore(app);
 
-    /* =========================
-       2. PAGE NAVIGATION
-    ========================= */
+    /* ── 2. PAGE NAVIGATION ── */
     const PAGES = ["auth", "dashboard", "txPage", "payPage"];
 
-function show(pageId) {
-  PAGES.forEach(id => {
-    document.getElementById(id).style.display = "none";
-    document.getElementById("goPay").onclick = () => show("payPage");
-  });
+    function show(pageId) {
+      PAGES.forEach(id => {
+        document.getElementById(id).style.display = "none";
+      });
+      document.getElementById(pageId).style.display = "block";
+    }
 
-  const el = document.getElementById(pageId);
-
-  // IMPORTANT: keep card layout stable
-  el.style.display = "block";
-}
-
-    /* =========================
-       3. BALANCE CALCULATION
-    ========================= */
+    /* ── 3. BALANCE CALCULATION ── */
     async function calculateBalances(uid) {
-      const txRef = collection(db, "users", uid, "transactions");
-      const snapshot = await getDocs(query(txRef));
+      const snapshot = await getDocs(query(collection(db, "users", uid, "transactions")));
 
-      let income = 0;
-      let expenses = 0;
-      let savings = 0;
+      let income = 0, expenses = 0, savings = 0;
 
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.type === "income") income += data.amount;
-        if (data.type === "expense") expenses += data.amount;
-        if (data.type === "transfer") {
-          if (data.to === "savings") savings += data.amount;
-          if (data.from === "savings") savings -= data.amount;
+      snapshot.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.type === "income")   income   += d.amount;
+        if (d.type === "expense")  expenses += d.amount;
+        if (d.type === "transfer") {
+          if (d.to   === "savings") savings += d.amount;
+          if (d.from === "savings") savings -= d.amount;
         }
       });
 
-      const currentBalance = income - expenses;
-
-      document.getElementById("currentBalance").textContent = "$" + currentBalance.toFixed(2);
-      document.getElementById("savingsBalance").textContent = "$" + savings.toFixed(2);
-      document.getElementById("availableBalance").textContent = "$" + currentBalance.toFixed(2);
+      const current = income - expenses;
+      const available = current - savings;
+      document.getElementById("currentBalance").textContent   = "$" + current.toFixed(2);
+      document.getElementById("savingsBalance").textContent   = "$" + savings.toFixed(2);
+      document.getElementById("availableBalance").textContent = "$" + available.toFixed(2);
     }
-    /* =========================
-       3.5 Balance Left to spend
-    ========================= */
+
+    /* ── 4. PAYCHECK HELPERS ── */
+
+    // Returns the most recent paycheck doc data, or null if none exist
+    async function getLatestPaycheck(uid) {
+      const snap = await getDocs(collection(db, "users", uid, "paychecks"));
+      if (snap.empty) return null;
+      return snap.docs[snap.docs.length - 1].data();
+    }
+
+    // Render the saved paycheck summary on the Paycheck page
+    async function loadPaycheck(uid) {
+      const latest = await getLatestPaycheck(uid);
+
+      if (!latest) {
+        document.getElementById("paycheckDisplay").textContent = "None";
+        return;
+      }
+
+      const date = latest.nextDate.toDate().toLocaleDateString();
+      document.getElementById("paycheckDisplay").textContent =
+        `$${latest.amount.toFixed(2)} • ${latest.frequency} • ${date}`;
+    }
+
+    // Calculate and render "left to spend before next paycheck"
     async function calculateLeftToSpend(uid) {
-  const now = new Date();
+      const now    = new Date();
+      const latest = await getLatestPaycheck(uid);
+      if (!latest) return;
 
-    /* =========================
-       3.6 Display Paycheck
-    ========================= */
-      async function loadPaycheck(uid) {
-  const snap = await getDocs(collection(db, "users", uid, "paychecks"));
+      const nextPayDate = latest.nextDate.toDate();
+      let upcomingBills = 0;
 
-  if (snap.empty) {
-    document.getElementById("paycheckDisplay").innerText = "None";
-    return;
-  }
+      const billSnap = await getDocs(collection(db, "users", uid, "bills"));
+      billSnap.forEach(docSnap => {
+        const bill = docSnap.data();
+        const due  = bill.dueDate.toDate();
+        if (due >= now && due <= nextPayDate) upcomingBills += bill.amount;
+      });
 
-  // get latest paycheck (last added)
-  const docs = snap.docs;
-  const latest = docs[docs.length - 1].data();
-
-  const date = latest.nextDate.toDate().toLocaleDateString();
-
-  document.getElementById("paycheckDisplay").innerText =
-    `$${latest.amount.toFixed(2)} • ${latest.frequency} • ${date}`;
-}
-  // GET PAYCHECK
-  const paySnap = await getDocs(collection(db, "users", uid, "paychecks"));
-  if (paySnap.empty) return;
-
-  const paycheck = paySnap.docs[0].data();
-  const nextPayDate = paycheck.nextDate.toDate();
-  const paycheckAmount = paycheck.amount;
-
-
-      
-  // GET BILLS
-  const billSnap = await getDocs(collection(db, "users", uid, "bills"));
-
-  let upcomingBills = 0;
-
-  billSnap.forEach(doc => {
-    const bill = doc.data();
-    const due = bill.dueDate.toDate();
-
-    // if bill is due before next paycheck
-    if (due <= nextPayDate && due >= now) {
-      upcomingBills += bill.amount;
-    }
-  });
-
-  const left = paycheckAmount - upcomingBills;
-
-  document.getElementById("leftToSpend").innerText =
-    "$" + left.toFixed(2);
-}
-    /* =========================
-       4. TRANSACTIONS
-    ========================= */
-    async function addTransaction(uid, data) {
-      const ref = collection(db, "users", uid, "transactions");
-      await addDoc(ref, { ...data, date: serverTimestamp() });
+      document.getElementById("leftToSpend").textContent =
+        "$" + (latest.amount - upcomingBills).toFixed(2);
     }
 
+    /* ── 5. TRANSACTIONS ── */
     document.getElementById("addTxnBtn").addEventListener("click", async () => {
       const user = auth.currentUser;
       if (!user) return;
 
-      const type = document.getElementById("type").value;
-      const amount = Number(document.getElementById("amount").value);
+      const type     = document.getElementById("type").value;
+      const amount   = Number(document.getElementById("amount").value);
       const category = document.getElementById("category").value;
-      const note = document.getElementById("note").value;
+      const note     = document.getElementById("note").value;
 
       if (!amount || amount <= 0) return;
 
-      await addTransaction(user.uid, { type, amount, category, note });
+      await addDoc(collection(db, "users", user.uid, "transactions"), {
+        type, amount, category, note,
+        date: serverTimestamp()
+      });
+
       await calculateBalances(user.uid);
     });
 
-    /* =========================
-       5. AUTH EVENT LISTENERS
-    ========================= */
-    document.getElementById("loginForm").addEventListener("submit", (e) => {
+    /* ── 6. PAYCHECK SAVE ── */
+    document.getElementById("savePayBtn").addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const amount    = Number(document.getElementById("payAmount").value);
+      const date      = document.getElementById("payDate").value;
+      const frequency = document.getElementById("payFrequency").value;
+
+      if (!amount || !date) return;
+
+      await addDoc(collection(db, "users", user.uid, "paychecks"), {
+        amount,
+        frequency,
+        nextDate: new Date(date + "T00:00:00"),
+        createdAt: serverTimestamp()
+      });
+
+      await loadPaycheck(user.uid);
+    });
+
+    /* ── 7. AUTH LISTENERS ── */
+    document.getElementById("loginForm").addEventListener("submit", e => {
       e.preventDefault();
-      const email = document.getElementById("email").value;
+      const email    = document.getElementById("email").value;
       const password = document.getElementById("password").value;
 
       signInWithEmailAndPassword(auth, email, password)
-        .catch((err) => {
-          document.getElementById("msg").textContent = err.message;
-        });
+        .catch(err => { document.getElementById("msg").textContent = err.message; });
     });
 
     document.getElementById("signupBtn").addEventListener("click", async () => {
-      const email = document.getElementById("email").value;
+      const email    = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const msg = document.getElementById("msg");
+      const msg      = document.getElementById("msg");
 
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(db, "users", cred.user.uid), {
-          email: cred.user.email,
+          email:            cred.user.email,
           availableBalance: 0,
-          currentBalance: 0,
-          savingsBalance: 0,
-          createdAt: serverTimestamp()
+          currentBalance:   0,
+          savingsBalance:   0,
+          createdAt:        serverTimestamp()
         });
         msg.textContent = "Account created!";
       } catch (err) {
@@ -420,57 +411,31 @@ function show(pageId) {
       document.getElementById("password").type = this.checked ? "text" : "password";
     });
 
-    /* =========================
-       6. NAVIGATION LISTENERS
-    ========================= */
-    document.getElementById("goTx").addEventListener("click", () => show("txPage"));
+    /* ── 8. NAV LISTENERS ── */
+    document.getElementById("goPay").addEventListener("click", () => show("payPage"));
+    document.getElementById("goTx").addEventListener("click",  () => show("txPage"));
 
     document.querySelectorAll(".back").forEach(btn => {
       btn.addEventListener("click", () => show("dashboard"));
     });
-document.getElementById("savePayBtn").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return;
 
-  const amount = Number(document.getElementById("payAmount").value);
-  const date = document.getElementById("payDate").value;
-  const frequency = document.getElementById("payFrequency").value;
+    /* ── 9. AUTH STATE ── */
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        document.getElementById("userInfo").textContent = "Logged in: " + user.email;
 
-  if (!amount || !date) return;
+        // Reset to avoid stale numbers while async calls load
+        ["currentBalance", "savingsBalance", "availableBalance", "leftToSpend"]
+          .forEach(id => { document.getElementById(id).textContent = "$0.00"; });
 
-  await addDoc(collection(db, "users", user.uid, "paychecks"), {
-    amount,
-    frequency,
-    nextDate: new Date(date),
-    createdAt: serverTimestamp()
-  });
-
-  alert("Paycheck saved!");
-
-  loadPaycheck(user.uid); // 👈 refresh display immediately
-});
-
-    /* =========================
-       7. AUTH STATE LISTENER
-    ========================= */
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    document.getElementById("userInfo").textContent =
-      "Logged in: " + user.email;
-
-    // RESET UI FIRST (prevents stale numbers)
-    document.getElementById("currentBalance").textContent = "$0.00";
-    document.getElementById("savingsBalance").textContent = "$0.00";
-    document.getElementById("availableBalance").textContent = "$0.00";
-
-    show("dashboard");
-    calculateBalances(user.uid);
-    calculateLeftToSpend(user.uid); 
-    loadPaycheck(user.uid);
-  } else {
-    show("auth");
-  }
-});
+        show("dashboard");
+        calculateBalances(user.uid).catch(console.error);
+        calculateLeftToSpend(user.uid);
+        loadPaycheck(user.uid);
+      } else {
+        show("auth");
+      }
+    });
   </script>
 </body>
 </html>
