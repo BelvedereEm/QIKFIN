@@ -104,6 +104,35 @@
       padding: 12px;
       border-radius: 12px;
     }
+    .recurring-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 8px 10px;
+  background: #0b1220;
+  border-radius: 8px;
+}
+
+.recurring-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.delete-btn:hover {
+  opacity: 1;
+}
+    
 
     .page { display: none; }
   </style>
@@ -216,6 +245,14 @@
 
     <button id="saveRecurringBtn" class="primary">Save</button>
     
+    <div class="recurring-row" style="opacity:0.6; font-weight:600;">
+  <span>Name</span>
+  <span>Amount</span>
+  <span>Freq</span>
+  <span>Date</span>
+  <span></span>
+</div>
+    
     <div id="recurringList"></div>
     
     <button class="back secondary">Back</button>
@@ -326,17 +363,19 @@
   row.className = "balanceBox";
 
   // ✅ FIX #3 (PLACED HERE)
-  const next = d.nextDate?.toDate
-    ? d.nextDate.toDate()
-    : new Date(d.nextDate);
+const next = d.nextDate?.toDate
+  ? d.nextDate.toDate()
+  : new Date(d.nextDate);
 
-  row.innerHTML = `
-    <strong>${d.name}</strong><br>
-    $${Number(d.amount || 0).toFixed(2)} • ${d.frequency}<br>
-    Next: ${next.toLocaleDateString()}
-    <br><br>
-    <button onclick="deleteRecurring('${docSnap.id}')">Delete</button>
-  `;
+row.className = "recurring-row";
+
+row.innerHTML = `
+  <span>${d.name}</span>
+  <span>$${Number(d.amount || 0).toFixed(2)}</span>
+  <span>${d.frequency}</span>
+  <span>${next.toLocaleDateString()}</span>
+  <button class="delete-btn" onclick="deleteRecurring('${docSnap.id}')">🗑</button>
+`;
 
   container.appendChild(row);
 });
