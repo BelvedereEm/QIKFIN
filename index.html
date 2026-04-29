@@ -170,7 +170,7 @@
   <h3>Left Until Next Paycheck</h3>
   <p id="leftToSpend">$0.00</p>
 </div>
-
+    <button id="goPay" class="primary">Paycheck</button>
     <button id="goTx" class="primary">Transactions</button>
     <button id="logoutBtn" class="secondary">Logout</button>
   </div>
@@ -192,13 +192,16 @@
     <button id="addTxnBtn" class="primary">Save</button>
     <button class="back secondary">Back</button>
   </div>
-  
-  <h3>Paycheck Setup</h3>
+<!-- PAYCHECK PAGE -->
+<div id="payPage" class="card page">
+  <h2>Paycheck Setup</h2>
 
-<input id="payAmount" type="number" placeholder="Paycheck Amount">
-<input id="payDate" type="date">
+  <input id="payAmount" type="number" class="qik-input" placeholder="Amount">
+  <input id="payDate" type="date" class="qik-input">
 
-<button id="savePayBtn">Save Paycheck</button>
+  <button id="savePayBtn" class="primary">Save</button>
+  <button class="back secondary">Back</button>
+</div>
 
   <!-- FIREBASE -->
   <script type="module">
@@ -249,11 +252,12 @@
     /* =========================
        2. PAGE NAVIGATION
     ========================= */
-    const PAGES = ["auth", "dashboard", "txPage"];
+    const PAGES = ["auth", "dashboard", "txPage", "payPage"];
 
 function show(pageId) {
   PAGES.forEach(id => {
     document.getElementById(id).style.display = "none";
+    document.getElementById("goPay").onclick = () => show("payPage");
   });
 
   const el = document.getElementById(pageId);
@@ -394,6 +398,22 @@ function show(pageId) {
     document.querySelectorAll(".back").forEach(btn => {
       btn.addEventListener("click", () => show("dashboard"));
     });
+    document.getElementById("savePayBtn").addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const amount = Number(document.getElementById("payAmount").value);
+  const date = new Date(document.getElementById("payDate").value);
+
+  if (!amount || !date) return;
+
+  await addDoc(collection(db, "users", user.uid, "paychecks"), {
+    amount,
+    nextDate: date
+  });
+
+  alert("Paycheck saved!");
+});
 
     /* =========================
        7. AUTH STATE LISTENER
