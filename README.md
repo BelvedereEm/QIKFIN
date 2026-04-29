@@ -1,13 +1,13 @@
 # QIKFIN
-Quick Finance Webpage App
+Quick Finance Webpage App</br>
 
-Firestore Protected/ App Check
+Firestore Protected/ App Check</br>
 
-Current Balance
-Available Balance
-Savings / Checking
-Left to Spend Until Next Paycheck
-See projections
+Current Balance</br>
+Available Balance</br>
+Savings / Checking</br>
+Left to Spend Until Next Paycheck</br>
+See projections</br>
 
 
 Add to Home Screen to use like an app. :)
