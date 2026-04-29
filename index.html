@@ -4,44 +4,64 @@
   <title>QIKFIN</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
+
     * { box-sizing: border-box; }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
-      background: #0f172a;
+      font-family: 'DM Mono', monospace;
+      background: #0a0f1e;
       margin: 0;
       padding: 20px;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       min-height: 100vh;
     }
 
-    /* ── CARD ── */
     .card {
       width: 100%;
-      max-width: 340px;
-      background: #111c33;
+      max-width: 360px;
+      background: #101828;
       padding: 24px;
-      border-radius: 16px;
+      border-radius: 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       color: white;
-      text-align: center;
+      border: 1px solid #1e2d47;
     }
 
     /* ── INPUTS ── */
     .qik-input, select {
       width: 100%;
-      padding: 12px;
+      padding: 11px 14px;
       border-radius: 10px;
-      border: 1px solid #24324d;
-      background: #0b1220;
+      border: 1px solid #1e2d47;
+      background: #080d18;
       color: white;
-      font-size: 14px;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
       -webkit-appearance: none;
       appearance: none;
+    }
+    .qik-input:focus, select:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    /* ── TRANSFER ROW ── */
+    .transfer-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .transfer-arrow {
+      color: #38bdf8;
+      font-size: 18px;
+      text-align: center;
+      flex-shrink: 0;
     }
 
     /* ── PASSWORD ROW ── */
@@ -50,361 +70,703 @@
       align-items: center;
       gap: 10px;
     }
-
     .password-row input[type="password"],
     .password-row input[type="text"] {
       flex: 1;
       min-width: 0;
     }
-
     .password-row input[type="checkbox"] {
       width: 18px;
       height: 18px;
       flex-shrink: 0;
       cursor: pointer;
+      accent-color: #38bdf8;
     }
 
     /* ── BUTTONS ── */
     button {
       width: 100%;
-      padding: 12px;
+      padding: 11px;
       border-radius: 10px;
       border: none;
-      font-size: 14px;
+      font-size: 13px;
+      font-family: 'DM Mono', monospace;
       cursor: pointer;
+      transition: opacity 0.15s;
     }
+    button:hover { opacity: 0.85; }
 
     button.primary {
       background: #38bdf8;
-      color: #0f172a;
-      font-weight: 600;
+      color: #080d18;
+      font-weight: 700;
+      letter-spacing: 0.03em;
     }
-
     button.secondary {
       background: transparent;
-      color: white;
-      border: 1px solid #2a3b5a;
+      color: rgba(255,255,255,0.6);
+      border: 1px solid #1e2d47;
+    }
+    button.danger {
+      background: transparent;
+      color: #f87171;
+      border: 1px solid #3d1a1a;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 6px;
+    }
+    button.edit-btn {
+      background: transparent;
+      color: #38bdf8;
+      border: 1px solid #1a3049;
+      width: auto;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 6px;
     }
 
     /* ── TYPOGRAPHY ── */
     h1, h2, h3 { color: white; margin: 0; text-align: center; }
-    h2  { font-size: 28px; font-weight: 700; }
-    h1  { font-size: 14px; font-weight: 500; opacity: 0.7; margin-bottom: -4px; }
-    h3  { font-size: 14px; font-weight: 500; opacity: 0.8; margin-top: 6px; }
-
-    /* ── MISC ── */
-    #msg {
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-      text-align: center;
+    h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    h1 {
+      font-size: 11px;
+      font-weight: 500;
+      opacity: 0.5;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: -4px;
+    }
+    h3 {
+      font-size: 10px;
+      font-weight: 500;
+      opacity: 0.5;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
     }
 
+    /* ── BALANCE BOX ── */
     .balanceBox {
-      background: #0b1220;
-      padding: 12px;
+      background: #080d18;
+      padding: 10px 14px;
       border-radius: 12px;
+      border: 1px solid #1a2540;
     }
-    .recurring-row {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  padding: 2px 10px;
-  line-height: 1.2;
-  min-height: 0;
-  background: #0b1220;
-  border-radius: 8px;
-}
+    .balanceBox p {
+      margin: 2px 0 0;
+      font-size: 20px;
+      font-weight: 500;
+      color: #e2e8f0;
+    }
+    .balanceBox.highlight p { color: #38bdf8; }
+    .balanceBox.warn p      { color: #fb923c; }
 
-.recurring-row span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-#recurringList {
-  display: flex;
-  flex-direction: column;
-  gap: 4px; /* Shaved 8px off the space between rows */
-  margin-top: 4px;
-}
-.delete-btn {
-  background: white;
-  border: none;
-  cursor: pointer;
-  font-size: 14px;
-  opacity: 0.7;
-  padding: 0;          /* Remove padding */
-  line-height: 1;      /* Keep it tight */
-  margin-left: 5px;
-  color: #ff0000;      /*red so it's clear */
-}
+    /* ── MSG ── */
+    #msg {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      text-align: center;
+      margin: 0;
+    }
 
-.delete-btn:hover {
-  opacity: 1;
-}
-    
+    /* ── SECTION LABEL ── */
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      margin: 4px 0 -4px;
+    }
+
+    /* ── SLIM LIST ROWS ── */
+    .list-header {
+      display: grid;
+      grid-template-columns: 1.8fr 0.9fr 0.8fr 0.9fr auto;
+      gap: 6px;
+      padding: 4px 10px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.4;
+      align-items: center;
+    }
+    .list-header.tx-header {
+      grid-template-columns: 0.6fr 1.2fr 1fr 1fr auto auto;
+    }
+
+    .slim-row {
+      display: grid;
+      grid-template-columns: 1.8fr 0.9fr 0.8fr 0.9fr auto;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 7px 10px;
+      background: #080d18;
+      border-radius: 9px;
+      border: 1px solid #1a2540;
+      line-height: 1.2;
+    }
+    .slim-row span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .slim-row .amount { color: #4ade80; }
+    .slim-row .amount.bill { color: #f87171; }
+    .slim-row .row-actions {
+      display: flex;
+      gap: 4px;
+      justify-content: flex-end;
+    }
+
+    /* tx rows: type | category | note | amount | edit | del */
+    .tx-row {
+      display: grid;
+      grid-template-columns: 0.6fr 1.1fr 1fr 0.9fr auto auto;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      padding: 7px 10px;
+      background: #080d18;
+      border-radius: 9px;
+      border: 1px solid #1a2540;
+      line-height: 1.2;
+    }
+    .tx-row span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .tx-row .type-badge {
+      font-size: 9px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .badge-income   { background: #14532d; color: #4ade80; }
+    .badge-expense  { background: #450a0a; color: #f87171; }
+    .badge-transfer { background: #1e3a5f; color: #38bdf8; }
+
+    /* ── EDIT INLINE ── */
+    .edit-overlay {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px;
+      background: #0b1525;
+      border-radius: 12px;
+      border: 1px solid #1e2d47;
+    }
+    .edit-overlay.visible { display: flex; }
+    .edit-row { display: flex; gap: 6px; }
+    .edit-row .qik-input { flex: 1; font-size: 12px; padding: 8px 10px; }
+
+    /* ── LIST CONTAINERS ── */
+    #recurringList, #registerList {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      border: none;
+      border-top: 1px solid #1a2540;
+      margin: 2px 0;
+    }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #38bdf8;
+      color: #080d18;
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 10px 20px;
+      border-radius: 40px;
+      transition: transform 0.3s ease;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); }
 
     .page { display: none; }
   </style>
 </head>
-
 <body>
 
-  <!-- ════════════════════════
-       AUTH PAGE
-  ════════════════════════ -->
-  <div id="auth" class="card page">
-    <h1>Welcome to</h1>
-    <h2>QIKFIN</h2>
-    <h3>Login or Sign Up</h3>
+<div id="toast"></div>
 
-    <form id="loginForm" autocomplete="on">
-      <input
-        type="email" id="email" name="email"
-        class="qik-input" placeholder="Email"
-        autocomplete="username"
-      >
+<!-- ════ AUTH ════ -->
+<div id="auth" class="card page">
+  <h1>Welcome to</h1>
+  <h2>QIKFIN</h2>
 
+  <form id="loginForm" autocomplete="on">
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <input type="email" id="email" name="email" class="qik-input" placeholder="Email" autocomplete="username">
       <div class="password-row">
-        <input
-          type="password" id="password" name="password"
-          class="qik-input" placeholder="Password"
-          autocomplete="current-password"
-        >
+        <input type="password" id="password" name="password" class="qik-input" placeholder="Password" autocomplete="current-password">
         <input type="checkbox" id="showPassword" title="Show password">
       </div>
-
       <button type="submit" class="primary">Login</button>
       <button type="button" id="signupBtn" class="secondary">Sign Up</button>
       <p id="msg"></p>
-    </form>
+    </div>
+  </form>
+</div>
+
+<!-- ════ DASHBOARD ════ -->
+<div id="dashboard" class="card page">
+  <h2>QIKFIN</h2>
+  <p id="userInfo" style="font-size:11px;opacity:0.4;text-align:center;margin:0;"></p>
+
+  <div class="balanceBox highlight">
+    <h3>Available</h3>
+    <p id="availableBalance">$0.00</p>
   </div>
 
-  <!-- ════════════════════════
-       DASHBOARD PAGE
-  ════════════════════════ -->
-  <div id="dashboard" class="card page">
-    <h2>Dashboard</h2>
-    <p id="userInfo"></p>
-
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
     <div class="balanceBox">
-      <h3>Current</h3>
+      <h3>Checking</h3>
       <p id="currentBalance">$0.00</p>
     </div>
-
     <div class="balanceBox">
       <h3>Savings</h3>
       <p id="savingsBalance">$0.00</p>
     </div>
-
-    <div class="balanceBox">
-      <h3>Available</h3>
-      <p id="availableBalance">$0.00</p>
-    </div>
-
-    <div class="balanceBox">
-      <h3>Left Until Next Paycheck</h3>
-      <p id="leftToSpend">$0.00</p>
-    </div>
-
-    <button id="goPay" class="primary">Income & Bills</button>
-    <button id="goTx"  class="primary">Transactions</button>
-    <button id="goRegister" class="primary">Register</button>
-    <button id="logoutBtn" class="secondary">Logout</button>
   </div>
 
-  <!-- ════════════════════════
-       TRANSACTIONS PAGE
-  ════════════════════════ -->
-  <div id="txPage" class="card page">
-    <h2>Transactions</h2>
+  <div class="balanceBox warn">
+    <h3>Left Until Next Paycheck</h3>
+    <p id="leftToSpend">—</p>
+  </div>
 
-    <select id="type" class="qik-input">
-      <option value="expense">Expense</option>
-      <option value="income">Income</option>
-      <option value="transfer">Transfer</option>
-    </select>
+  <button id="goPay"      class="primary">Income &amp; Bills</button>
+  <button id="goTx"       class="primary">Add Transaction</button>
+  <button id="goRegister" class="primary">Register</button>
+  <button id="logoutBtn"  class="secondary">Logout</button>
+</div>
 
+<!-- ════ TRANSACTIONS ════ -->
+<div id="txPage" class="card page">
+  <h2>Transaction</h2>
+
+  <select id="type" class="qik-input">
+    <option value="expense">Expense</option>
+    <option value="income">Income</option>
+    <option value="transfer">Transfer</option>
+  </select>
+
+  <!-- Normal fields (hidden for transfer) -->
+  <div id="normalFields" style="display:flex;flex-direction:column;gap:8px;">
     <input id="amount"   type="number" class="qik-input" placeholder="Amount">
     <input id="category" class="qik-input" placeholder="Category">
-    <input id="note"     class="qik-input" placeholder="Note">
-
-    <button id="addTxnBtn" class="primary">Save</button>
-    <button class="back secondary">Back</button>
+    <input id="note"     class="qik-input" placeholder="Note (optional)">
   </div>
 
-  <!-- ════════════════════════
-       Income & Bills Page
-  ════════════════════════ -->
-  <div id="payPage" class="card page">
-    <h2>Income & Bills Setup</h2>
+  <!-- Transfer fields -->
+  <div id="transferFields" style="display:none;flex-direction:column;gap:8px;">
+    <div class="transfer-row">
+      <select id="transferFrom" class="qik-input">
+        <option value="checking">Checking</option>
+        <option value="savings">Savings</option>
+      </select>
+      <span class="transfer-arrow">→</span>
+      <select id="transferTo" class="qik-input">
+        <option value="savings">Savings</option>
+        <option value="checking">Checking</option>
+      </select>
+    </div>
+    <input id="transferAmount" type="number" class="qik-input" placeholder="Amount">
+    <input id="transferNote" class="qik-input" placeholder="Note (optional)">
+  </div>
 
+  <button id="addTxnBtn" class="primary">Save Transaction</button>
+  <button class="back secondary">← Back</button>
+</div>
+
+<!-- ════ INCOME & BILLS ════ -->
+<div id="payPage" class="card page">
+  <h2>Income &amp; Bills</h2>
+
+  <div style="display:flex;flex-direction:column;gap:8px;">
     <select id="recurringType" class="qik-input">
-    <option value="income">Income</option>
-    <option value="bill">Bill</option>
+      <option value="income">Income</option>
+      <option value="bill">Bill</option>
     </select>
-
-    <input id="recurringName" class="qik-input" placeholder="Name (Paycheck, Rent)">
+    <input id="recurringName"   class="qik-input" placeholder="Name (Paycheck, Rent…)">
     <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
-    <input id="recurringDate" class="qik-input" type="date">
+    <input id="recurringDate"   class="qik-input" type="date">
     <select id="recurringFrequency" class="qik-input">
-    <option value="weekly">Weekly</option>
-    <option value="biweekly">Biweekly</option>
-    <option value="monthly">Monthly</option>
-    <option value="yearly">Yearly</option>
+      <option value="weekly">Weekly</option>
+      <option value="biweekly">Biweekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option>
     </select>
-
-    <button id="saveRecurringBtn" class="primary">Save</button>
-    
-    <div class="recurring-row" style="opacity:0.6; font-weight:600; margin-bottom: -8px;">
-  <span>Name</span>
-  <span>Amount</span>
-  <span>Freq</span>
-  <span>Date</span>
-  <span></span>
-</div>
-    
-    <div id="recurringList"></div>
-    
-    <button class="back secondary">Back</button>
+    <button id="saveRecurringBtn" class="primary">Add</button>
   </div>
 
-   <!-- ════════════════════════
-       Income & Bills Page
-  ════════════════════════ -->
-  <div id="registerPage" class="card page">
-  <h2>Register</h2>
-  <div id="registerList"></div>
-  <button class="back secondary">Back</button>
+  <hr class="divider">
+
+  <div class="list-header">
+    <span>Name</span><span>Amt</span><span>Freq</span><span>Next</span><span></span>
+  </div>
+  <div id="recurringList"></div>
+
+  <button class="back secondary">← Back</button>
 </div>
-  
 
-  <!-- ════════════════════════
-       FIREBASE
-  ════════════════════════ -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
-      signOut,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-    import {
-      getFirestore,
-      doc, setDoc, getDocs, query,
-      collection, addDoc, serverTimestamp, deleteDoc, orderBy
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
-    import {
-      initializeAppCheck,
-      ReCaptchaV3Provider
-    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
+<!-- ════ REGISTER ════ -->
+<div id="registerPage" class="card page">
+  <h2>Register</h2>
 
-    /* ── 1. INIT ── */
-    const app = initializeApp({
-      apiKey:            "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
-      authDomain:        "qikfin.firebaseapp.com",
-      projectId:         "qikfin",
-      storageBucket:     "qikfin.firebasestorage.app",
-      messagingSenderId: "867906265805",
-      appId:             "1:867906265805:web:fef99742609ce5151e3f84"
-    });
+  <!-- Inline edit panel -->
+  <div id="editOverlay" class="edit-overlay">
+    <p class="section-label" style="margin:0;">Edit Transaction</p>
+    <input id="editAmount"   type="number" class="qik-input" placeholder="Amount">
+    <input id="editCategory" class="qik-input" placeholder="Category">
+    <input id="editNote"     class="qik-input" placeholder="Note">
+    <div class="edit-row">
+      <button id="saveEditBtn" class="primary" style="flex:1;">Save</button>
+      <button id="cancelEditBtn" class="secondary" style="flex:1;">Cancel</button>
+    </div>
+  </div>
 
-    initializeAppCheck(app, {
-      provider: new ReCaptchaV3Provider("6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu"),
-      isTokenAutoRefreshEnabled: true
-    });
+  <div class="list-header tx-header">
+    <span>Type</span><span>Cat</span><span>Note</span><span>Amt</span><span></span><span></span>
+  </div>
+  <div id="registerList"></div>
+  <button class="back secondary">← Back</button>
+</div>
 
-    const auth = getAuth(app);
-    const db   = getFirestore(app);
+<!-- ════ FIREBASE ════ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, getDocs, updateDoc,
+    query, collection, addDoc, serverTimestamp, deleteDoc, orderBy, where, Timestamp
+  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+  import {
+    initializeAppCheck, ReCaptchaV3Provider
+  } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app-check.js";
 
-    /* ── 2. PAGE NAVIGATION ── */
-    const PAGES = ["auth", "dashboard", "txPage", "payPage", "registerPage"];
+  /* ── INIT ── */
+  const app = initializeApp({
+    apiKey:            "AIzaSyBUxKRW99n3MdM3h5lIthrSLhtysqKOHwE",
+    authDomain:        "qikfin.firebaseapp.com",
+    projectId:         "qikfin",
+    storageBucket:     "qikfin.firebasestorage.app",
+    messagingSenderId: "867906265805",
+    appId:             "1:867906265805:web:fef99742609ce5151e3f84"
+  });
 
-    function show(pageId) {
-      PAGES.forEach(id => {
-        document.getElementById(id).style.display = "none";
-      });
-      document.getElementById(pageId).style.display = "block";
+  initializeAppCheck(app, {
+    provider: new ReCaptchaV3Provider("6LeiFs8sAAAAAI4EgcoVTRjQYkRPqeHeeUtyozDu"),
+    isTokenAutoRefreshEnabled: true
+  });
+
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  /* ── TOAST ── */
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 2800);
+  }
+
+  /* ── PAGES ── */
+  const PAGES = ["auth","dashboard","txPage","payPage","registerPage"];
+  function show(id) {
+    PAGES.forEach(p => document.getElementById(p).style.display = "none");
+    document.getElementById(id).style.display = "flex";
+  }
+
+  /* ════════════════════════════════════════
+     FREQUENCY HELPERS
+  ════════════════════════════════════════ */
+  function advanceDate(date, frequency) {
+    const d = new Date(date);
+    switch (frequency) {
+      case "weekly":    d.setDate(d.getDate() + 7);    break;
+      case "biweekly":  d.setDate(d.getDate() + 14);   break;
+      case "monthly":   d.setMonth(d.getMonth() + 1);  break;
+      case "yearly":    d.setFullYear(d.getFullYear() + 1); break;
+    }
+    return d;
+  }
+
+  function toDate(val) {
+    if (!val) return null;
+    if (val?.toDate) return val.toDate();
+    if (val instanceof Date) return val;
+    return new Date(val);
+  }
+
+  /* ════════════════════════════════════════
+     AUTO-POST RECURRING ITEMS
+     Fires on login. For each recurring item
+     whose nextDate <= today, post a transaction
+     and advance to the next occurrence.
+  ════════════════════════════════════════ */
+  async function processRecurring(uid) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // end of today
+
+    const snap = await getDocs(collection(db, "users", uid, "recurring"));
+    const batch = [];
+
+    for (const docSnap of snap.docs) {
+      const d = docSnap.data();
+      let nextDate = toDate(d.nextDate);
+
+      while (nextDate && nextDate <= today) {
+        // Post transaction
+        batch.push(addDoc(collection(db, "users", uid, "transactions"), {
+          type:      d.type === "income" ? "income" : "expense",
+          amount:    Number(d.amount),
+          category:  d.name,
+          note:      `Auto: ${d.frequency}`,
+          source:    "recurring",
+          date:      Timestamp.fromDate(nextDate)
+        }));
+
+        // Advance date
+        nextDate = advanceDate(nextDate, d.frequency);
+      }
+
+      // Update nextDate in recurring doc
+      if (nextDate) {
+        batch.push(updateDoc(doc(db, "users", uid, "recurring", docSnap.id), {
+          nextDate: Timestamp.fromDate(nextDate)
+        }));
+      }
     }
 
-    /* ── 3. BALANCE CALCULATION ── */
-    async function calculateBalances(uid) {
-      const snap = await getDocs(
-  collection(db, "users", uid, "transactions")
-);
+    await Promise.all(batch);
+  }
 
-      let income = 0, expenses = 0, savings = 0;
+  /* ════════════════════════════════════════
+     BALANCE CALCULATION
+     checking = income - expenses
+     savings  = net transfers into savings
+     available = checking - savings
+  ════════════════════════════════════════ */
+  async function calculateBalances(uid) {
+    const snap = await getDocs(collection(db, "users", uid, "transactions"));
 
-      snap.forEach(docSnap => {
-        const d = docSnap.data();
-        if (d.type === "income")   income   += d.amount;
-        if (d.type === "expense")  expenses += d.amount;
-        if (d.type === "transfer") {
-          if (d.to   === "savings") savings += d.amount;
-          if (d.from === "savings") savings -= d.amount;
-        }
+    let income = 0, expenses = 0, savingsNet = 0;
+
+    snap.forEach(s => {
+      const d = s.data();
+      if (d.type === "income")   income   += Number(d.amount);
+      if (d.type === "expense")  expenses += Number(d.amount);
+      if (d.type === "transfer") {
+        const from = d.transferFrom || d.from || "";
+        const to   = d.transferTo   || d.to   || "";
+        const amt  = Number(d.amount);
+        if (to   === "savings")  savingsNet += amt;
+        if (from === "savings")  savingsNet -= amt;
+      }
+    });
+
+    const checking  = income - expenses;
+    const available = checking - savingsNet;
+
+    document.getElementById("currentBalance").textContent   = fmt(checking);
+    document.getElementById("savingsBalance").textContent   = fmt(savingsNet);
+    document.getElementById("availableBalance").textContent = fmt(available);
+
+    return { checking, savings: savingsNet, available };
+  }
+
+  /* ════════════════════════════════════════
+     LEFT UNTIL NEXT PAYCHECK
+     1. Find the next income recurring item (soonest nextDate in future)
+     2. Sum all bill recurring items due before that date
+     3. left = available - bills_before_paycheck
+  ════════════════════════════════════════ */
+  async function calculateLeft(uid) {
+    const balances = await calculateBalances(uid);
+    const now = new Date();
+
+    const snap = await getDocs(collection(db, "users", uid, "recurring"));
+    const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
+
+    // Next income occurrence
+    const incomes = items
+      .filter(i => i.type === "income")
+      .map(i => toDate(i.nextDate))
+      .filter(d => d > now)
+      .sort((a, b) => a - b);
+
+    if (incomes.length === 0) {
+      document.getElementById("leftToSpend").textContent = "—";
+      return;
+    }
+    const nextPaycheck = incomes[0];
+
+    // Bills due before that paycheck
+    const billsDue = items
+      .filter(i => i.type === "bill")
+      .reduce((sum, i) => {
+        const nd = toDate(i.nextDate);
+        return nd && nd <= nextPaycheck ? sum + Number(i.amount) : sum;
+      }, 0);
+
+    const left = balances.available - billsDue;
+
+    const el = document.getElementById("leftToSpend");
+    el.textContent = fmt(left);
+
+    // Show paycheck date hint
+    const opts = { month: "short", day: "numeric" };
+    el.title = `Next paycheck: ${nextPaycheck.toLocaleDateString(undefined, opts)} · Bills due: ${fmt(billsDue)}`;
+  }
+
+  function fmt(n) {
+    return (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(2);
+  }
+
+  /* ════════════════════════════════════════
+     RECURRING LIST
+  ════════════════════════════════════════ */
+  async function loadRecurring(uid) {
+    const container = document.getElementById("recurringList");
+    container.innerHTML = "";
+
+    const snap = await getDocs(
+      query(collection(db, "users", uid, "recurring"), orderBy("nextDate"))
+    );
+
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const next = toDate(d.nextDate);
+      const isIncome = d.type === "income";
+
+      const row = document.createElement("div");
+      row.className = "slim-row";
+      row.innerHTML = `
+        <span title="${d.name}">${d.name}</span>
+        <span class="amount ${isIncome ? "" : "bill"}">
+          ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
+        </span>
+        <span>${d.frequency}</span>
+        <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
+        <div class="row-actions">
+          <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
+        </div>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  window.deleteRecurring = async id => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid, "recurring", id));
+    loadRecurring(user.uid);
+    toast("Deleted.");
+  };
+
+  /* ════════════════════════════════════════
+     SAVE RECURRING
+  ════════════════════════════════════════ */
+  document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const type      = document.getElementById("recurringType").value;
+    const name      = document.getElementById("recurringName").value.trim();
+    const amount    = Number(document.getElementById("recurringAmount").value);
+    const dateStr   = document.getElementById("recurringDate").value;
+    const frequency = document.getElementById("recurringFrequency").value;
+
+    if (!name || !amount || !dateStr) return;
+
+    await addDoc(collection(db, "users", user.uid, "recurring"), {
+      type, name, amount, frequency,
+      nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById("recurringName").value   = "";
+    document.getElementById("recurringAmount").value = "";
+    document.getElementById("recurringDate").value   = "";
+
+    loadRecurring(user.uid);
+    calculateLeft(user.uid);
+    toast("Saved!");
+  });
+
+  /* ════════════════════════════════════════
+     TRANSFER TYPE TOGGLE
+  ════════════════════════════════════════ */
+  document.getElementById("type").addEventListener("change", function () {
+    const isTransfer = this.value === "transfer";
+    document.getElementById("normalFields").style.display   = isTransfer ? "none"  : "flex";
+    document.getElementById("transferFields").style.display = isTransfer ? "flex"  : "none";
+  });
+
+  // Keep transferFrom / transferTo from being the same
+  ["transferFrom","transferTo"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      const from = document.getElementById("transferFrom").value;
+      const to   = document.getElementById("transferTo").value;
+      if (from === to) {
+        document.getElementById("transferTo").value = from === "checking" ? "savings" : "checking";
+      }
+    });
+  });
+
+  /* ════════════════════════════════════════
+     ADD TRANSACTION
+  ════════════════════════════════════════ */
+  document.getElementById("addTxnBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const type = document.getElementById("type").value;
+
+    if (type === "transfer") {
+      const from   = document.getElementById("transferFrom").value;
+      const to     = document.getElementById("transferTo").value;
+      const amount = Number(document.getElementById("transferAmount").value);
+      const note   = document.getElementById("transferNote").value;
+
+      if (!amount || amount <= 0 || from === to) return;
+
+      await addDoc(collection(db, "users", user.uid, "transactions"), {
+        type: "transfer",
+        amount,
+        transferFrom: from,
+        transferTo:   to,
+        category: `${from} → ${to}`,
+        note,
+        date: serverTimestamp()
       });
 
-      const current = income - expenses;
-      const available = current - savings;
-      document.getElementById("currentBalance").textContent   = "$" + current.toFixed(2);
-      document.getElementById("savingsBalance").textContent   = "$" + savings.toFixed(2);
-      document.getElementById("availableBalance").textContent = "$" + available.toFixed(2);
-    }
-
-    /* ── 4. Income & Bills HELPERS ── */
-
-    async function loadRecurring(uid) {
-  const container = document.getElementById("recurringList");
-  container.innerHTML = "";
-
-  const snap = await getDocs(
-  query(
-    collection(db, "users", uid, "recurring"),
-    orderBy("nextDate")
-  )
-);
-
- snap.forEach(docSnap => {
-  const d = docSnap.data();
-
-  const row = document.createElement("div");
-  row.className = "balanceBox";
-
-  // ✅ FIX #3 (PLACED HERE)
-const next = d.nextDate?.toDate
-  ? d.nextDate.toDate()
-  : new Date(d.nextDate);
-
-row.className = "recurring-row";
-
-row.innerHTML = `
-  <span>${d.name}</span>
-  <span>$${Number(d.amount || 0).toFixed(2)}</span>
-  <span>${d.frequency}</span>
-  <span>${next.toLocaleDateString()}</span>
-  <button class="delete-btn" onclick="deleteRecurring('${docSnap.id}')">X</button>
-`;
-
-  container.appendChild(row);
-});
-}
-
-window.deleteRecurring = async (id) => {
-  const user = auth.currentUser;
-  await deleteDoc(doc(db, "users", user.uid, "recurring", id));
-  loadRecurring(user.uid);
-};
-
-    /* ── 5. TRANSACTIONS ── */
-    document.getElementById("addTxnBtn").addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const type     = document.getElementById("type").value;
+      document.getElementById("transferAmount").value = "";
+      document.getElementById("transferNote").value   = "";
+    } else {
       const amount   = Number(document.getElementById("amount").value);
       const category = document.getElementById("category").value;
       const note     = document.getElementById("note").value;
@@ -416,147 +778,162 @@ window.deleteRecurring = async (id) => {
         date: serverTimestamp()
       });
 
-      await calculateBalances(user.uid);
-      loadRegister(user.uid);
-
-      document.getElementById("amount").value = "";
+      document.getElementById("amount").value   = "";
       document.getElementById("category").value = "";
-      document.getElementById("note").value = "";      
-    });
-    /* ── 6. Load Register ── */
-    async function loadRegister(uid) {
-  const container = document.getElementById("registerList");
-  container.innerHTML = "";
+      document.getElementById("note").value     = "";
+    }
 
-  const snap = await getDocs(
-  query(
-    collection(db, "users", uid, "transactions"),
-    orderBy("date", "desc")
-  )
-);
-
-  snap.forEach(docSnap => {
-    const d = docSnap.data();
-
-    const row = document.createElement("div");
-    row.className = "balanceBox";
-
-    row.innerHTML = `
-      ${d.type.toUpperCase()} - $${Number(d.amount || 0).toFixed(2)}<br>
-      ${d.category || ""}<br>
-      ${d.note || ""}
-      <br><br>
-      <button onclick="deleteTxn('${docSnap.id}')">Delete</button>
-    `;
-
-    container.appendChild(row);
+    await calculateLeft(user.uid);
+    toast("Transaction saved!");
   });
-}
-    window.deleteTxn = async (id) => {
-  const user = auth.currentUser;
-  await deleteDoc(doc(db, "users", user.uid, "transactions", id));
-  loadRegister(user.uid);
-  calculateBalances(user.uid);
-};
-    
-    /* ── 7. Income & Bills SAVE ── */
-    document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
+
+  /* ════════════════════════════════════════
+     REGISTER
+  ════════════════════════════════════════ */
+  let editingId = null;
+
+  async function loadRegister(uid) {
+    const container = document.getElementById("registerList");
+    container.innerHTML = "";
+
+    const snap = await getDocs(
+      query(collection(db, "users", uid, "transactions"), orderBy("date", "desc"))
+    );
+
+    snap.forEach(docSnap => {
+      const d = docSnap.data();
+      const isTransfer = d.type === "transfer";
+
+      const row = document.createElement("div");
+      row.className = "tx-row";
+
+      const badgeClass = `badge-${d.type}`;
+      const amtColor   = d.type === "income" ? "color:#4ade80" :
+                         d.type === "expense" ? "color:#f87171" : "color:#38bdf8";
+      const sign       = d.type === "income" ? "+" : d.type === "expense" ? "-" : "⇄";
+
+      row.innerHTML = `
+        <span><span class="type-badge ${badgeClass}">${d.type[0].toUpperCase()}</span></span>
+        <span title="${d.category || ""}">${d.category || "—"}</span>
+        <span title="${d.note || ""}">${d.note || "—"}</span>
+        <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
+        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
+        <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
+      `;
+
+      container.appendChild(row);
+    });
+  }
+
+  window.deleteTxn = async id => {
     const user = auth.currentUser;
     if (!user) return;
-
-    const type = document.getElementById("recurringType").value;
-    const name = document.getElementById("recurringName").value;
-    const amount = Number(document.getElementById("recurringAmount").value);
-    const date = document.getElementById("recurringDate").value;
-    const frequency = document.getElementById("recurringFrequency").value;
-
-    if (!name || !amount || !date) return;
-
-await addDoc(collection(db, "users", user.uid, "recurring"), {
-  type,
-  name,
-  amount,
-  frequency,
-  nextDate: new Date(date + "T00:00:00"),
-  createdAt: serverTimestamp()
-});
-
-loadRecurring(user.uid);
-
-// clear inputs
-document.getElementById("recurringName").value = "";
-document.getElementById("recurringAmount").value = "";
-document.getElementById("recurringDate").value = "";
-  });
-
-    /* ── 8. AUTH LISTENERS ── */
-    document.getElementById("loginForm").addEventListener("submit", e => {
-      e.preventDefault();
-      const email    = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-
-      signInWithEmailAndPassword(auth, email, password)
-        .catch(err => { document.getElementById("msg").textContent = err.message; });
-    });
-
-    document.getElementById("signupBtn").addEventListener("click", async () => {
-      const email    = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const msg      = document.getElementById("msg");
-
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await setDoc(doc(db, "users", cred.user.uid), {
-          email:            cred.user.email,
-          availableBalance: 0,
-          currentBalance:   0,
-          savingsBalance:   0,
-          createdAt:        serverTimestamp()
-        });
-        msg.textContent = "Account created!";
-      } catch (err) {
-        msg.textContent = err.message;
-      }
-    });
-
-    document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-
-    document.getElementById("showPassword").addEventListener("change", function () {
-      document.getElementById("password").type = this.checked ? "text" : "password";
-    });
-
-    /* ── 9. NAV LISTENERS ── */
-    document.getElementById("goPay").addEventListener("click", () => show("payPage"));
-    document.getElementById("goTx").addEventListener("click",  () => show("txPage"));
-    document.getElementById("goRegister").onclick = () => {
-    show("registerPage");
-
-    const user = auth.currentUser;
-    if (user) {
-      loadRegister(user.uid);
-    }
+    await deleteDoc(doc(db, "users", user.uid, "transactions", id));
+    loadRegister(user.uid);
+    calculateLeft(user.uid);
+    toast("Deleted.");
   };
 
-    document.querySelectorAll(".back").forEach(btn => {
-      btn.addEventListener("click", () => show("dashboard"));
+  window.startEdit = (id, amount, category, note, isTransfer) => {
+    editingId = id;
+    document.getElementById("editAmount").value   = amount;
+    document.getElementById("editCategory").value = category;
+    document.getElementById("editNote").value     = note;
+    document.getElementById("editCategory").disabled = isTransfer;
+    document.getElementById("editOverlay").classList.add("visible");
+    document.getElementById("editOverlay").scrollIntoView({ behavior: "smooth" });
+  };
+
+  document.getElementById("saveEditBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user || !editingId) return;
+
+    const amount   = Number(document.getElementById("editAmount").value);
+    const category = document.getElementById("editCategory").value;
+    const note     = document.getElementById("editNote").value;
+
+    if (!amount || amount <= 0) return;
+
+    await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
+      amount, category, note
     });
 
-    /* ── 10. AUTH STATE ── */
-    onAuthStateChanged(auth, user => {
-      if (user) {
-        document.getElementById("userInfo").textContent = "Logged in: " + user.email;
+    editingId = null;
+    document.getElementById("editOverlay").classList.remove("visible");
+    loadRegister(user.uid);
+    calculateLeft(user.uid);
+    toast("Updated!");
+  });
 
-        // Reset to avoid stale numbers while async calls load
-        ["currentBalance", "savingsBalance", "availableBalance", "leftToSpend"]
-          .forEach(id => { document.getElementById(id).textContent = "$0.00"; });
+  document.getElementById("cancelEditBtn").addEventListener("click", () => {
+    editingId = null;
+    document.getElementById("editOverlay").classList.remove("visible");
+  });
 
-        show("dashboard");
-        calculateBalances(user.uid).catch(console.error);
-        loadRecurring(user.uid);
-      } else {
-        show("auth");
-      }
-    });
-  </script>
+  /* ════════════════════════════════════════
+     AUTH
+  ════════════════════════════════════════ */
+  document.getElementById("loginForm").addEventListener("submit", e => {
+    e.preventDefault();
+    signInWithEmailAndPassword(auth,
+      document.getElementById("email").value,
+      document.getElementById("password").value
+    ).catch(err => { document.getElementById("msg").textContent = err.message; });
+  });
+
+  document.getElementById("signupBtn").addEventListener("click", async () => {
+    const email    = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    const msg      = document.getElementById("msg");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email: cred.user.email,
+        createdAt: serverTimestamp()
+      });
+      msg.textContent = "Account created!";
+    } catch (err) {
+      msg.textContent = err.message;
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+  document.getElementById("showPassword").addEventListener("change", function () {
+    document.getElementById("password").type = this.checked ? "text" : "password";
+  });
+
+  /* ── NAV ── */
+  document.getElementById("goPay").addEventListener("click", () => {
+    show("payPage");
+    loadRecurring(auth.currentUser?.uid);
+  });
+  document.getElementById("goTx").addEventListener("click", () => show("txPage"));
+  document.getElementById("goRegister").addEventListener("click", () => {
+    show("registerPage");
+    loadRegister(auth.currentUser?.uid);
+  });
+  document.querySelectorAll(".back").forEach(btn =>
+    btn.addEventListener("click", () => show("dashboard"))
+  );
+
+  /* ── AUTH STATE ── */
+  onAuthStateChanged(auth, async user => {
+    if (user) {
+      document.getElementById("userInfo").textContent = user.email;
+      show("dashboard");
+
+      // Reset display
+      ["currentBalance","savingsBalance","availableBalance","leftToSpend"]
+        .forEach(id => document.getElementById(id).textContent = "…");
+
+      // Process due recurring items FIRST, then recalculate
+      await processRecurring(user.uid);
+      await calculateLeft(user.uid);
+    } else {
+      show("auth");
+    }
+  });
+</script>
 </body>
 </html>
