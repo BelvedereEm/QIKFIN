@@ -156,6 +156,7 @@
       padding: 10px 14px;
       border-radius: 12px;
       border: 1px solid #1a2540;
+      text-align: center;
     }
     .balanceBox p {
       margin: 2px 0 0;
@@ -196,7 +197,7 @@
       align-items: center;
     }
     .list-header.tx-header {
-      grid-template-columns: 0.6fr 1.2fr 1fr 1fr auto auto;
+      grid-template-columns: 0.6fr 1.1fr 1fr 0.9fr 1rem auto auto;
     }
 
     .slim-row {
@@ -224,10 +225,10 @@
       justify-content: flex-end;
     }
 
-    /* tx rows: type | category | note | amount | edit | del */
+    /* tx rows: type | category | note | amount | cleared | edit | del */
     .tx-row {
       display: grid;
-      grid-template-columns: 0.6fr 1.1fr 1fr 0.9fr auto auto;
+      grid-template-columns: 0.6fr 1.1fr 1fr 0.9fr 1rem auto auto;
       align-items: center;
       gap: 6px;
       font-size: 12px;
@@ -254,7 +255,35 @@
     .badge-expense  { background: #450a0a; color: #f87171; }
     .badge-transfer { background: #1e3a5f; color: #38bdf8; }
 
-    /* ── EDIT INLINE ── */
+    /* ── CLEARED CHECKBOX ── */
+    .cleared-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .cleared-wrap input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      cursor: pointer;
+      accent-color: #4ade80;
+      flex-shrink: 0;
+    }
+    .tx-row.pending {
+      opacity: 0.5;
+      border-style: dashed;
+    }
+    .badge-pending {
+      font-size: 8px;
+      letter-spacing: 0.04em;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: #2a1f00;
+      color: #fbbf24;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+
+
     .edit-overlay {
       display: none;
       flex-direction: column;
@@ -446,7 +475,7 @@
   </div>
 
   <div class="list-header tx-header">
-    <span>Type</span><span>Cat</span><span>Note</span><span>Amt</span><span></span><span></span>
+    <span>Type</span><span>Cat</span><span>Note</span><span>Amt</span><span>Clr</span><span></span><span></span>
   </div>
   <div id="registerList"></div>
   <button class="back secondary">← Back</button>
@@ -546,6 +575,7 @@
           category:  d.name,
           note:      `Auto: ${d.frequency}`,
           source:    "recurring",
+          cleared:   false,
           date:      Timestamp.fromDate(nextDate)
         }));
 
@@ -566,9 +596,10 @@
 
   /* ════════════════════════════════════════
      BALANCE CALCULATION
-     checking = income - expenses
-     savings  = net transfers into savings
-     available = checking - savings
+     Only CLEARED transactions affect displayed balances.
+     checking = income - expenses - transfers_to_savings + transfers_from_savings
+     savings  = transfers_to_savings - transfers_from_savings
+     available = checking (savings is already carved out)
   ════════════════════════════════════════ */
   async function calculateBalances(uid) {
     const snap = await getDocs(collection(db, "users", uid, "transactions"));
@@ -577,25 +608,29 @@
 
     snap.forEach(s => {
       const d = s.data();
-      if (d.type === "income")   income   += Number(d.amount);
-      if (d.type === "expense")  expenses += Number(d.amount);
+      if (!d.cleared) return; // only count cleared transactions
+
+      const amt = Number(d.amount);
+      if (d.type === "income")  income   += amt;
+      if (d.type === "expense") expenses += amt;
       if (d.type === "transfer") {
         const from = d.transferFrom || d.from || "";
         const to   = d.transferTo   || d.to   || "";
-        const amt  = Number(d.amount);
-        if (to   === "savings")  savingsNet += amt;
-        if (from === "savings")  savingsNet -= amt;
+        if (to   === "savings") savingsNet += amt;
+        if (from === "savings") savingsNet -= amt;
       }
     });
 
-    const checking  = income - expenses;
-    const available = checking - savingsNet;
+    // Checking = all money received minus money spent minus money moved to savings
+    const checking  = income - expenses - savingsNet;
+    const savings   = savingsNet;
+    const available = checking; // available IS checking; savings is separate
 
     document.getElementById("currentBalance").textContent   = fmt(checking);
-    document.getElementById("savingsBalance").textContent   = fmt(savingsNet);
+    document.getElementById("savingsBalance").textContent   = fmt(savings);
     document.getElementById("availableBalance").textContent = fmt(available);
 
-    return { checking, savings: savingsNet, available };
+    return { checking, savings, available };
   }
 
   /* ════════════════════════════════════════
@@ -761,6 +796,7 @@
         transferTo:   to,
         category: `${from} → ${to}`,
         note,
+        cleared: false,
         date: serverTimestamp()
       });
 
@@ -775,6 +811,7 @@
 
       await addDoc(collection(db, "users", user.uid, "transactions"), {
         type, amount, category, note,
+        cleared: false,
         date: serverTimestamp()
       });
 
@@ -803,20 +840,26 @@
     snap.forEach(docSnap => {
       const d = docSnap.data();
       const isTransfer = d.type === "transfer";
+      const isCleared  = !!d.cleared;
 
       const row = document.createElement("div");
-      row.className = "tx-row";
+      row.className = "tx-row" + (isCleared ? "" : " pending");
 
       const badgeClass = `badge-${d.type}`;
-      const amtColor   = d.type === "income" ? "color:#4ade80" :
-                         d.type === "expense" ? "color:#f87171" : "color:#38bdf8";
-      const sign       = d.type === "income" ? "+" : d.type === "expense" ? "-" : "⇄";
+      const amtColor   = d.type === "income"   ? "color:#4ade80" :
+                         d.type === "expense"  ? "color:#f87171" : "color:#38bdf8";
+      const sign       = d.type === "income"   ? "+" :
+                         d.type === "expense"  ? "-" : "⇄";
 
       row.innerHTML = `
         <span><span class="type-badge ${badgeClass}">${d.type[0].toUpperCase()}</span></span>
         <span title="${d.category || ""}">${d.category || "—"}</span>
         <span title="${d.note || ""}">${d.note || "—"}</span>
         <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
+        <div class="cleared-wrap">
+          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}
+            onchange="window.toggleCleared('${docSnap.id}', this.checked)">
+        </div>
         <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
         <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
       `;
@@ -824,6 +867,15 @@
       container.appendChild(row);
     });
   }
+
+  window.toggleCleared = async (id, cleared) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await updateDoc(doc(db, "users", user.uid, "transactions", id), { cleared });
+    // Refresh balances immediately; re-render register to update pending style
+    await calculateLeft(user.uid);
+    loadRegister(user.uid);
+  };
 
   window.deleteTxn = async id => {
     const user = auth.currentUser;
