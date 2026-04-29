@@ -331,6 +331,75 @@
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
+    /* ── PROJECTION TIMELINE ── */
+    .proj-result {
+      background: #080d18;
+      border: 1px solid #1a2540;
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: center;
+    }
+    .proj-result .proj-amount {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .proj-result .proj-amount.positive { color: #4ade80; }
+    .proj-result .proj-amount.negative { color: #f87171; }
+    .proj-result .proj-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.45;
+    }
+    .proj-result .proj-sub {
+      font-size: 11px;
+      opacity: 0.5;
+      margin-top: 2px;
+    }
+
+    .proj-breakdown {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .proj-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 12px;
+      padding: 6px 10px;
+      background: #080d18;
+      border-radius: 8px;
+      border: 1px solid #1a2540;
+    }
+    .proj-row span:first-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      opacity: 0.8;
+    }
+    .proj-row .proj-date {
+      font-size: 10px;
+      opacity: 0.4;
+      white-space: nowrap;
+    }
+    .proj-row .proj-amt { white-space: nowrap; }
+    .proj-row .proj-amt.inc { color: #4ade80; }
+    .proj-row .proj-amt.bill { color: #f87171; }
+
+    .proj-section-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.35;
+      padding: 4px 2px 0;
+    }
+
     .page { display: none; }
   </style>
 </head>
@@ -383,10 +452,11 @@
     <p id="leftToSpend">—</p>
   </div>
 
-  <button id="goPay"      class="primary">Income &amp; Bills</button>
-  <button id="goTx"       class="primary">Add Transaction</button>
-  <button id="goRegister" class="primary">Register</button>
-  <button id="logoutBtn"  class="secondary">Logout</button>
+  <button id="goPay"        class="primary">Income &amp; Bills</button>
+  <button id="goTx"         class="primary">Add Transaction</button>
+  <button id="goRegister"   class="primary">Register</button>
+  <button id="goProjections" class="primary">Projections</button>
+  <button id="logoutBtn"    class="secondary">Logout</button>
 </div>
 
 <!-- ════ TRANSACTIONS ════ -->
@@ -481,6 +551,41 @@
   <button class="back secondary">← Back</button>
 </div>
 
+<!-- ════ PROJECTIONS ════ -->
+<div id="projectionsPage" class="card page">
+  <h2>Projections</h2>
+  <p style="font-size:11px;opacity:0.4;text-align:center;margin:0;">Pick a future date to see your projected balance.</p>
+
+  <input id="projDate" type="date" class="qik-input">
+  <button id="runProjectionBtn" class="primary">Calculate</button>
+
+  <div id="projOutput" style="display:none;flex-direction:column;gap:8px;">
+
+    <div class="proj-result">
+      <div class="proj-label">Projected Available</div>
+      <div id="projFinalAmt" class="proj-amount">—</div>
+      <div id="projFinalSub" class="proj-sub"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div class="balanceBox">
+        <h3>+ Income</h3>
+        <p id="projTotalIncome" style="color:#4ade80;">$0.00</p>
+      </div>
+      <div class="balanceBox">
+        <h3>− Bills</h3>
+        <p id="projTotalBills" style="color:#f87171;">$0.00</p>
+      </div>
+    </div>
+
+    <div class="proj-section-label">Scheduled Events</div>
+    <div id="projBreakdown" class="proj-breakdown"></div>
+
+  </div>
+
+  <button class="back secondary">← Back</button>
+</div>
+
 <!-- ════ FIREBASE ════ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
@@ -523,7 +628,7 @@
   }
 
   /* ── PAGES ── */
-  const PAGES = ["auth","dashboard","txPage","payPage","registerPage"];
+  const PAGES = ["auth","dashboard","txPage","payPage","registerPage","projectionsPage"];
   function show(id) {
     PAGES.forEach(p => document.getElementById(p).style.display = "none");
     document.getElementById(id).style.display = "flex";
@@ -955,7 +1060,112 @@
     document.getElementById("password").type = this.checked ? "text" : "password";
   });
 
+  /* ════════════════════════════════════════
+     PROJECTIONS ENGINE
+     Starting from today's cleared balances,
+     simulate all recurring events up to the
+     chosen date and show a running breakdown.
+  ════════════════════════════════════════ */
+  async function runProjection(uid) {
+    const dateVal = document.getElementById("projDate").value;
+    if (!dateVal) return;
+
+    const targetDate = new Date(dateVal + "T23:59:59");
+    const today      = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (targetDate <= today) {
+      toast("Pick a future date.");
+      return;
+    }
+
+    // Current cleared balances as starting point
+    const balances = await calculateBalances(uid);
+    let running = balances.available;
+
+    // Load recurring items
+    const snap  = await getDocs(collection(db, "users", uid, "recurring"));
+    const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
+
+    // Build list of all occurrences between now and targetDate
+    const events = [];
+
+    for (const item of items) {
+      let d = toDate(item.nextDate);
+      if (!d) continue;
+
+      while (d <= targetDate) {
+        if (d > today) {
+          events.push({
+            name:   item.name,
+            amount: Number(item.amount),
+            type:   item.type,   // "income" | "bill"
+            date:   new Date(d)
+          });
+        }
+        d = advanceDate(d, item.frequency);
+      }
+    }
+
+    // Sort chronologically
+    events.sort((a, b) => a.date - b.date);
+
+    // Tally
+    let totalIncome = 0, totalBills = 0;
+    for (const e of events) {
+      if (e.type === "income") { running += e.amount; totalIncome += e.amount; }
+      else                     { running -= e.amount; totalBills  += e.amount; }
+    }
+
+    // Render result card
+    const amtEl = document.getElementById("projFinalAmt");
+    amtEl.textContent = fmt(running);
+    amtEl.className   = "proj-amount " + (running >= 0 ? "positive" : "negative");
+
+    const opts = { month: "long", day: "numeric", year: "numeric" };
+    document.getElementById("projFinalSub").textContent =
+      `as of ${targetDate.toLocaleDateString(undefined, opts)}`;
+
+    document.getElementById("projTotalIncome").textContent = fmt(totalIncome);
+    document.getElementById("projTotalBills").textContent  = fmt(totalBills);
+
+    // Render breakdown
+    const breakdown = document.getElementById("projBreakdown");
+    breakdown.innerHTML = "";
+
+    if (events.length === 0) {
+      breakdown.innerHTML = `<p style="font-size:12px;opacity:0.4;text-align:center;">No scheduled events in this range.</p>`;
+    } else {
+      events.forEach(e => {
+        const row = document.createElement("div");
+        row.className = "proj-row";
+        const isInc = e.type === "income";
+        const shortDate = e.date.toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
+        row.innerHTML = `
+          <span>${e.name}</span>
+          <span class="proj-date">${shortDate}</span>
+          <span class="proj-amt ${isInc ? "inc" : "bill"}">
+            ${isInc ? "+" : "−"}$${e.amount.toFixed(2)}
+          </span>
+        `;
+        breakdown.appendChild(row);
+      });
+    }
+
+    document.getElementById("projOutput").style.display = "flex";
+  }
+
+  document.getElementById("runProjectionBtn").addEventListener("click", () => {
+    const uid = auth.currentUser?.uid;
+    if (uid) runProjection(uid);
+  });
+
   /* ── NAV ── */
+  document.getElementById("goProjections").addEventListener("click", () => {
+    document.getElementById("projOutput").style.display = "none";
+    document.getElementById("projDate").value = "";
+    show("projectionsPage");
+  });
   document.getElementById("goPay").addEventListener("click", () => {
     show("payPage");
     loadRecurring(auth.currentUser?.uid);
