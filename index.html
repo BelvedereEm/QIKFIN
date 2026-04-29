@@ -110,7 +110,9 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  padding: 8px 10px;
+  padding: 2px 10px;
+  line-height: 1.2;
+  min-height: 0;
   background: #0b1220;
   border-radius: 8px;
 }
@@ -241,6 +243,7 @@
     <option value="weekly">Weekly</option>
     <option value="biweekly">Biweekly</option>
     <option value="monthly">Monthly</option>
+    <option value="yearly">Yearly</option>
     </select>
 
     <button id="saveRecurringBtn" class="primary">Save</button>
@@ -374,7 +377,7 @@ row.innerHTML = `
   <span>$${Number(d.amount || 0).toFixed(2)}</span>
   <span>${d.frequency}</span>
   <span>${next.toLocaleDateString()}</span>
-  <button class="delete-btn" onclick="deleteRecurring('${docSnap.id}')">🗑</button>
+  <button class="delete-btn" onclick="deleteRecurring('${docSnap.id}')">X</button>
 `;
 
   container.appendChild(row);
