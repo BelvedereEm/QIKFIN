@@ -168,8 +168,9 @@
       <p id="leftToSpend">$0.00</p>
     </div>
 
-    <button id="goPay" class="primary">Paycheck</button>
+    <button id="goPay" class="primary">Income & Bills</button>
     <button id="goTx"  class="primary">Transactions</button>
+    <button id="goRegister" class="primary">Register</button>
     <button id="logoutBtn" class="secondary">Logout</button>
   </div>
 
@@ -194,29 +195,41 @@
   </div>
 
   <!-- ════════════════════════
-       PAYCHECK PAGE
+       Income & Bills Page
   ════════════════════════ -->
   <div id="payPage" class="card page">
-    <h2>Paycheck Setup</h2>
+    <h2>Income & Bills Setup</h2>
 
-    <input id="payAmount" type="number" class="qik-input" placeholder="Amount">
-    <input id="payDate"   type="date"   class="qik-input">
-
-    <select id="payFrequency" class="qik-input">
-      <option value="weekly">Weekly</option>
-      <option value="biweekly">Biweekly</option>
-      <option value="monthly">Monthly</option>
+    <select id="recurringType" class="qik-input">
+    <option value="income">Income</option>
+    <option value="bill">Bill</option>
     </select>
 
-    <button id="savePayBtn" class="primary">Save</button>
+    <input id="recurringName" class="qik-input" placeholder="Name (Paycheck, Rent)">
+    <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
+    <input id="recurringDate" class="qik-input" type="date">
+    <select id="recurringFrequency" class="qik-input">
+    <option value="weekly">Weekly</option>
+    <option value="biweekly">Biweekly</option>
+    <option value="monthly">Monthly</option>
+    </select>
 
-    <div class="balanceBox">
-      <h3>Saved Paycheck</h3>
-      <p id="paycheckDisplay">None</p>
-    </div>
-
+    <button id="saveRecurringBtn" class="primary">Save</button>
+    
+    <div id="recurringList"></div>
+    
     <button class="back secondary">Back</button>
   </div>
+
+   <!-- ════════════════════════
+       Income & Bills Page
+  ════════════════════════ -->
+  <div id="registerPage" class="card page">
+  <h2>Register</h2>
+  <div id="registerList"></div>
+  <button class="back secondary">Back</button>
+</div>
+  
 
   <!-- ════════════════════════
        FIREBASE
@@ -233,7 +246,7 @@
     import {
       getFirestore,
       doc, setDoc, getDocs, query,
-      collection, addDoc, serverTimestamp
+      collection, addDoc, serverTimestamp, deleteDoc, orderBy
     } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
     import {
       initializeAppCheck,
@@ -259,7 +272,7 @@
     const db   = getFirestore(app);
 
     /* ── 2. PAGE NAVIGATION ── */
-    const PAGES = ["auth", "dashboard", "txPage", "payPage"];
+    const PAGES = ["auth", "dashboard", "txPage", "payPage", "registerPage"];
 
     function show(pageId) {
       PAGES.forEach(id => {
@@ -270,11 +283,13 @@
 
     /* ── 3. BALANCE CALCULATION ── */
     async function calculateBalances(uid) {
-      const snapshot = await getDocs(query(collection(db, "users", uid, "transactions")));
+      const snap = await getDocs(
+  collection(db, "users", uid, "transactions")
+);
 
       let income = 0, expenses = 0, savings = 0;
 
-      snapshot.forEach(docSnap => {
+      snap.forEach(docSnap => {
         const d = docSnap.data();
         if (d.type === "income")   income   += d.amount;
         if (d.type === "expense")  expenses += d.amount;
@@ -291,48 +306,47 @@
       document.getElementById("availableBalance").textContent = "$" + available.toFixed(2);
     }
 
-    /* ── 4. PAYCHECK HELPERS ── */
+    /* ── 4. Income & Bills HELPERS ── */
 
-    // Returns the most recent paycheck doc data, or null if none exist
-    async function getLatestPaycheck(uid) {
-      const snap = await getDocs(collection(db, "users", uid, "paychecks"));
-      if (snap.empty) return null;
-      return snap.docs[snap.docs.length - 1].data();
-    }
+    async function loadRecurring(uid) {
+  const container = document.getElementById("recurringList");
+  container.innerHTML = "";
 
-    // Render the saved paycheck summary on the Paycheck page
-    async function loadPaycheck(uid) {
-      const latest = await getLatestPaycheck(uid);
+  const snap = await getDocs(
+  query(
+    collection(db, "users", uid, "recurring"),
+    orderBy("nextDate")
+  )
+);
 
-      if (!latest) {
-        document.getElementById("paycheckDisplay").textContent = "None";
-        return;
-      }
+ snap.forEach(docSnap => {
+  const d = docSnap.data();
 
-      const date = latest.nextDate.toDate().toLocaleDateString();
-      document.getElementById("paycheckDisplay").textContent =
-        `$${latest.amount.toFixed(2)} • ${latest.frequency} • ${date}`;
-    }
+  const row = document.createElement("div");
+  row.className = "balanceBox";
 
-    // Calculate and render "left to spend before next paycheck"
-    async function calculateLeftToSpend(uid) {
-      const now    = new Date();
-      const latest = await getLatestPaycheck(uid);
-      if (!latest) return;
+  // ✅ FIX #3 (PLACED HERE)
+  const next = d.nextDate?.toDate
+    ? d.nextDate.toDate()
+    : new Date(d.nextDate);
 
-      const nextPayDate = latest.nextDate.toDate();
-      let upcomingBills = 0;
+  row.innerHTML = `
+    <strong>${d.name}</strong><br>
+    $${Number(d.amount || 0).toFixed(2)} • ${d.frequency}<br>
+    Next: ${next.toLocaleDateString()}
+    <br><br>
+    <button onclick="deleteRecurring('${docSnap.id}')">Delete</button>
+  `;
 
-      const billSnap = await getDocs(collection(db, "users", uid, "bills"));
-      billSnap.forEach(docSnap => {
-        const bill = docSnap.data();
-        const due  = bill.dueDate.toDate();
-        if (due >= now && due <= nextPayDate) upcomingBills += bill.amount;
-      });
+  container.appendChild(row);
+});
+}
 
-      document.getElementById("leftToSpend").textContent =
-        "$" + (latest.amount - upcomingBills).toFixed(2);
-    }
+window.deleteRecurring = async (id) => {
+  const user = auth.currentUser;
+  await deleteDoc(doc(db, "users", user.uid, "recurring", id));
+  loadRecurring(user.uid);
+};
 
     /* ── 5. TRANSACTIONS ── */
     document.getElementById("addTxnBtn").addEventListener("click", async () => {
@@ -352,30 +366,79 @@
       });
 
       await calculateBalances(user.uid);
+      loadRegister(user.uid);
+
+      document.getElementById("amount").value = "";
+      document.getElementById("category").value = "";
+      document.getElementById("note").value = "";      
     });
+    /* ── 6. Load Register ── */
+    async function loadRegister(uid) {
+  const container = document.getElementById("registerList");
+  container.innerHTML = "";
 
-    /* ── 6. PAYCHECK SAVE ── */
-    document.getElementById("savePayBtn").addEventListener("click", async () => {
-      const user = auth.currentUser;
-      if (!user) return;
+  const snap = await getDocs(
+  query(
+    collection(db, "users", uid, "transactions"),
+    orderBy("date", "desc")
+  )
+);
 
-      const amount    = Number(document.getElementById("payAmount").value);
-      const date      = document.getElementById("payDate").value;
-      const frequency = document.getElementById("payFrequency").value;
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
 
-      if (!amount || !date) return;
+    const row = document.createElement("div");
+    row.className = "balanceBox";
 
-      await addDoc(collection(db, "users", user.uid, "paychecks"), {
-        amount,
-        frequency,
-        nextDate: new Date(date + "T00:00:00"),
-        createdAt: serverTimestamp()
-      });
+    row.innerHTML = `
+      ${d.type.toUpperCase()} - $${Number(d.amount || 0).toFixed(2)}<br>
+      ${d.category || ""}<br>
+      ${d.note || ""}
+      <br><br>
+      <button onclick="deleteTxn('${docSnap.id}')">Delete</button>
+    `;
 
-      await loadPaycheck(user.uid);
-    });
+    container.appendChild(row);
+  });
+}
+    window.deleteTxn = async (id) => {
+  const user = auth.currentUser;
+  await deleteDoc(doc(db, "users", user.uid, "transactions", id));
+  loadRegister(user.uid);
+  calculateBalances(user.uid);
+};
+    
+    /* ── 7. Income & Bills SAVE ── */
+    document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-    /* ── 7. AUTH LISTENERS ── */
+    const type = document.getElementById("recurringType").value;
+    const name = document.getElementById("recurringName").value;
+    const amount = Number(document.getElementById("recurringAmount").value);
+    const date = document.getElementById("recurringDate").value;
+    const frequency = document.getElementById("recurringFrequency").value;
+
+    if (!name || !amount || !date) return;
+
+await addDoc(collection(db, "users", user.uid, "recurring"), {
+  type,
+  name,
+  amount,
+  frequency,
+  nextDate: new Date(date + "T00:00:00"),
+  createdAt: serverTimestamp()
+});
+
+loadRecurring(user.uid);
+
+// clear inputs
+document.getElementById("recurringName").value = "";
+document.getElementById("recurringAmount").value = "";
+document.getElementById("recurringDate").value = "";
+  });
+
+    /* ── 8. AUTH LISTENERS ── */
     document.getElementById("loginForm").addEventListener("submit", e => {
       e.preventDefault();
       const email    = document.getElementById("email").value;
@@ -411,15 +474,23 @@
       document.getElementById("password").type = this.checked ? "text" : "password";
     });
 
-    /* ── 8. NAV LISTENERS ── */
+    /* ── 9. NAV LISTENERS ── */
     document.getElementById("goPay").addEventListener("click", () => show("payPage"));
     document.getElementById("goTx").addEventListener("click",  () => show("txPage"));
+    document.getElementById("goRegister").onclick = () => {
+    show("registerPage");
+
+    const user = auth.currentUser;
+    if (user) {
+      loadRegister(user.uid);
+    }
+  };
 
     document.querySelectorAll(".back").forEach(btn => {
       btn.addEventListener("click", () => show("dashboard"));
     });
 
-    /* ── 9. AUTH STATE ── */
+    /* ── 10. AUTH STATE ── */
     onAuthStateChanged(auth, user => {
       if (user) {
         document.getElementById("userInfo").textContent = "Logged in: " + user.email;
@@ -430,8 +501,7 @@
 
         show("dashboard");
         calculateBalances(user.uid).catch(console.error);
-        calculateLeftToSpend(user.uid);
-        loadPaycheck(user.uid);
+        loadRecurring(user.uid);
       } else {
         show("auth");
       }
