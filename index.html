@@ -948,9 +948,15 @@
       return;
     }
 
-    await addDoc(collection(db, "users", user.uid, "budgetCategories"), {
-      name, monthlyLimit: limit, createdAt: serverTimestamp()
-    });
+    try {
+      await addDoc(collection(db, "users", user.uid, "budgetCategories"), {
+        name, monthlyLimit: limit, createdAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Add category:", e);
+      toast("Error saving category: " + e.message);
+      return;
+    }
 
     document.getElementById("budgetCatName").value  = "";
     document.getElementById("budgetCatLimit").value = "";
@@ -1340,7 +1346,13 @@
       updateData.nextDate = Timestamp.fromDate(new Date(dateStr + "T00:00:00"));
     }
 
-    await updateDoc(doc(db, "users", user.uid, "recurring", editingRecurringId), updateData);
+    try {
+      await updateDoc(doc(db, "users", user.uid, "recurring", editingRecurringId), updateData);
+    } catch (e) {
+      console.error("Edit recurring:", e);
+      toast("Error updating: " + e.message);
+      return;
+    }
 
     editingRecurringId = null;
     document.getElementById("editRecurringOverlay").classList.remove("visible");
@@ -1382,11 +1394,17 @@
       return;
     }
 
-    await addDoc(collection(db, "users", user.uid, "recurring"), {
-      type, name, description, category, amount, frequency,
-      nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
-      createdAt: serverTimestamp()
-    });
+    try {
+      await addDoc(collection(db, "users", user.uid, "recurring"), {
+        type, name, description, category, amount, frequency,
+        nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
+        createdAt: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Save recurring:", e);
+      toast("Error saving: " + e.message);
+      return;
+    }
 
     document.getElementById("recurringName").value     = "";
     document.getElementById("recurringDesc").value     = "";
@@ -1581,9 +1599,15 @@
 
     if (!amount || amount <= 0) return;
 
-    await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
-      amount, category, note
-    });
+    try {
+      await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
+        amount, category, note
+      });
+    } catch (e) {
+      console.error("Edit transaction:", e);
+      toast("Error updating: " + e.message);
+      return;
+    }
 
     editingId = null;
     document.getElementById("editOverlay").classList.remove("visible");
@@ -1770,15 +1794,15 @@
       ["currentBalance","savingsBalance","availableBalance","leftToSpend"]
         .forEach(id => document.getElementById(id).textContent = "…");
 
-      // Load budget categories for dropdowns
-      await loadBudgetCategories(user.uid);
+      // Load budget categories (non-blocking — don't let failure stop balances)
+      try { await loadBudgetCategories(user.uid); } catch (e) { console.warn("Budget categories:", e); }
 
       // Process due recurring items FIRST, then recalculate
-      await processRecurring(user.uid);
-      await calculateLeft(user.uid);
+      try { await processRecurring(user.uid); } catch (e) { console.warn("Process recurring:", e); }
+      try { await calculateLeft(user.uid); } catch (e) { console.warn("Calculate left:", e); }
 
       // Show budget alerts on dashboard
-      await showDashBudgetAlerts(user.uid);
+      try { await showDashBudgetAlerts(user.uid); } catch (e) { console.warn("Budget alerts:", e); }
     } else {
       show("auth");
     }
