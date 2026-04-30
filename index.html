@@ -644,6 +644,34 @@
 
   <hr class="divider">
 
+  <!-- Inline edit panel for recurring items -->
+  <div id="editRecurringOverlay" class="edit-overlay">
+    <p class="section-label" style="margin:0;">Edit Recurring Item</p>
+    <select id="editRecurringType" class="qik-input">
+      <option value="income">Income</option>
+      <option value="bill">Bill</option>
+    </select>
+    <input id="editRecurringName" class="qik-input" placeholder="Name">
+    <input id="editRecurringDesc" class="qik-input" placeholder="Description (optional)">
+    <div class="category-wrap">
+      <select id="editRecurringCategory" class="qik-input">
+        <option value="">— Select Category —</option>
+      </select>
+    </div>
+    <input id="editRecurringAmount" type="number" class="qik-input" placeholder="Amount">
+    <input id="editRecurringDate" type="date" class="qik-input">
+    <select id="editRecurringFrequency" class="qik-input">
+      <option value="weekly">Weekly</option>
+      <option value="biweekly">Biweekly</option>
+      <option value="monthly">Monthly</option>
+      <option value="yearly">Yearly</option>
+    </select>
+    <div class="edit-row">
+      <button id="saveEditRecurringBtn" class="primary" style="flex:1;">Save</button>
+      <button id="cancelEditRecurringBtn" class="secondary" style="flex:1;">Cancel</button>
+    </div>
+  </div>
+
   <div class="list-header" style="grid-template-columns:1.2fr 0.9fr 0.7fr 0.7fr 0.7fr auto;">
     <span>Name</span><span>Cat</span><span>Amt</span><span>Freq</span><span>Next</span><span></span>
   </div>
@@ -834,7 +862,7 @@
   }
 
   function populateCategoryDropdowns() {
-    const selectors = ["category", "editCategory", "recurringCategory"];
+    const selectors = ["category", "editCategory", "recurringCategory", "editRecurringCategory"];
     selectors.forEach(selId => {
       const sel = document.getElementById(selId);
       if (!sel) return;
@@ -872,6 +900,7 @@
   document.getElementById("category").addEventListener("change", function() { handleCategoryOther(this); });
   document.getElementById("editCategory").addEventListener("change", function() { handleCategoryOther(this); });
   document.getElementById("recurringCategory").addEventListener("change", function() { handleCategoryOther(this); });
+  document.getElementById("editRecurringCategory").addEventListener("change", function() { handleCategoryOther(this); });
 
   async function loadBudgetList(uid) {
     const container = document.getElementById("budgetList");
@@ -1237,12 +1266,75 @@
         <span>${d.frequency}</span>
         <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
         <div class="row-actions">
+          <button class="edit-btn" onclick="window.startEditRecurring('${docSnap.id}', '${(d.type||"bill").replace(/'/g,"\\'")}', '${(d.name||"").replace(/'/g,"\\'")}', '${(d.description||"").replace(/'/g,"\\'")}', '${(d.category||"").replace(/'/g,"\\'")}', ${Number(d.amount)}, '${d.frequency}', '${next ? next.toISOString().slice(0,10) : ""}')">✎</button>
           <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
         </div>
       `;
       container.appendChild(row);
     });
   }
+
+  /* ── EDIT RECURRING ── */
+  let editingRecurringId = null;
+
+  window.startEditRecurring = (id, type, name, description, category, amount, frequency, dateStr) => {
+    editingRecurringId = id;
+    document.getElementById("editRecurringType").value      = type;
+    document.getElementById("editRecurringName").value      = name;
+    document.getElementById("editRecurringDesc").value      = description;
+    document.getElementById("editRecurringAmount").value    = amount;
+    document.getElementById("editRecurringFrequency").value = frequency;
+    document.getElementById("editRecurringDate").value      = dateStr;
+
+    const catSel = document.getElementById("editRecurringCategory");
+    const optExists = Array.from(catSel.options).some(o => o.value === category);
+    if (!optExists && category) {
+      const opt = document.createElement("option");
+      opt.value = category;
+      opt.textContent = category;
+      catSel.insertBefore(opt, catSel.querySelector('[value="__other__"]'));
+    }
+    catSel.value = category;
+
+    document.getElementById("editRecurringOverlay").classList.add("visible");
+    document.getElementById("editRecurringOverlay").scrollIntoView({ behavior: "smooth" });
+  };
+
+  document.getElementById("saveEditRecurringBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user || !editingRecurringId) return;
+
+    const type        = document.getElementById("editRecurringType").value;
+    const name        = document.getElementById("editRecurringName").value.trim();
+    const description = document.getElementById("editRecurringDesc").value.trim();
+    const category    = document.getElementById("editRecurringCategory").value;
+    const amount      = Number(document.getElementById("editRecurringAmount").value);
+    const dateStr     = document.getElementById("editRecurringDate").value;
+    const frequency   = document.getElementById("editRecurringFrequency").value;
+
+    if (!name || !amount) {
+      toast("Name and amount are required.");
+      return;
+    }
+
+    const updateData = { type, name, description, category, amount, frequency };
+    if (dateStr) {
+      updateData.nextDate = Timestamp.fromDate(new Date(dateStr + "T00:00:00"));
+    }
+
+    await updateDoc(doc(db, "users", user.uid, "recurring", editingRecurringId), updateData);
+
+    editingRecurringId = null;
+    document.getElementById("editRecurringOverlay").classList.remove("visible");
+    loadRecurring(user.uid);
+    calculateLeft(user.uid);
+    toast("Updated!");
+  });
+
+  document.getElementById("cancelEditRecurringBtn").addEventListener("click", () => {
+    editingRecurringId = null;
+    document.getElementById("editRecurringOverlay").classList.remove("visible");
+  });
 
   window.deleteRecurring = async id => {
     const user = auth.currentUser;
