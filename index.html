@@ -912,13 +912,20 @@
       const row = document.createElement("div");
       row.className = "budget-mgr-row";
       row.innerHTML = `
-        <span title="${cat.name}">${cat.name}</span>
-        <span style="color:#38bdf8;">$${Number(cat.monthlyLimit).toFixed(2)}/mo</span>
+        <span></span>
+        <span style="color:#38bdf8;"></span>
         <div class="row-actions">
-          <button class="edit-btn" onclick="window.editBudgetCat('${cat.id}', '${cat.name.replace(/'/g,"\\'")}', ${cat.monthlyLimit})">✎</button>
-          <button class="danger" onclick="window.deleteBudgetCat('${cat.id}')">✕</button>
+          <button class="edit-btn">✎</button>
+          <button class="danger">✕</button>
         </div>
       `;
+      row.children[0].textContent = cat.name;
+      row.children[0].title = cat.name;
+      row.children[1].textContent = `$${Number(cat.monthlyLimit).toFixed(2)}/mo`;
+      const editBtn = row.querySelector(".edit-btn");
+      const delBtn  = row.querySelector(".danger");
+      editBtn.addEventListener("click", () => window.editBudgetCat(cat.id, cat.name, cat.monthlyLimit));
+      delBtn.addEventListener("click", () => window.deleteBudgetCat(cat.id));
       container.appendChild(row);
     });
   }
@@ -1258,18 +1265,29 @@
       row.className = "slim-row";
       row.style.gridTemplateColumns = "1.2fr 0.9fr 0.7fr 0.7fr 0.7fr auto";
       row.innerHTML = `
-        <span title="${d.name}${d.description ? ' — ' + d.description : ''}">${d.name}</span>
-        <span title="${d.category || ''}">${d.category || "—"}</span>
+        <span></span>
+        <span></span>
         <span class="amount ${isIncome ? "" : "bill"}">
           ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
         </span>
         <span>${d.frequency}</span>
         <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
         <div class="row-actions">
-          <button class="edit-btn" onclick="window.startEditRecurring('${docSnap.id}', '${(d.type||"bill").replace(/'/g,"\\'")}', '${(d.name||"").replace(/'/g,"\\'")}', '${(d.description||"").replace(/'/g,"\\'")}', '${(d.category||"").replace(/'/g,"\\'")}', ${Number(d.amount)}, '${d.frequency}', '${next ? next.toISOString().slice(0,10) : ""}')">✎</button>
-          <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
+          <button class="edit-btn">✎</button>
+          <button class="danger">✕</button>
         </div>
       `;
+      row.children[0].textContent = d.name;
+      row.children[0].title = d.name + (d.description ? ' — ' + d.description : '');
+      row.children[1].textContent = d.category || "—";
+      row.children[1].title = d.category || '';
+      const editBtn = row.querySelector(".edit-btn");
+      const delBtn  = row.querySelector(".danger");
+      editBtn.addEventListener("click", () => window.startEditRecurring(
+        docSnap.id, d.type || "bill", d.name || "", d.description || "",
+        d.category || "", Number(d.amount), d.frequency, next ? next.toISOString().slice(0, 10) : ""
+      ));
+      delBtn.addEventListener("click", () => window.deleteRecurring(docSnap.id));
       container.appendChild(row);
     });
   }
@@ -1492,16 +1510,25 @@
 
       row.innerHTML = `
         <span><span class="type-badge ${badgeClass}">${d.type[0].toUpperCase()}</span></span>
-        <span title="${d.category || ""}">${d.category || "—"}</span>
-        <span title="${d.note || ""}">${d.note || "—"}</span>
+        <span></span>
+        <span></span>
         <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
         <div class="cleared-wrap">
-          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}
-            onchange="window.toggleCleared('${docSnap.id}', this.checked)">
+          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}>
         </div>
-        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
-        <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
+        <button class="edit-btn">✎</button>
+        <button class="danger">✕</button>
       `;
+      row.children[1].textContent = d.category || "—";
+      row.children[1].title = d.category || "";
+      row.children[2].textContent = d.note || "—";
+      row.children[2].title = d.note || "";
+      const checkbox = row.querySelector('input[type="checkbox"]');
+      checkbox.addEventListener("change", () => window.toggleCleared(docSnap.id, checkbox.checked));
+      const editBtn = row.querySelector(".edit-btn");
+      const delBtn  = row.querySelector(".danger");
+      editBtn.addEventListener("click", () => window.startEdit(docSnap.id, d.amount, d.category || "", d.note || "", isTransfer));
+      delBtn.addEventListener("click", () => window.deleteTxn(docSnap.id));
 
       container.appendChild(row);
     });
