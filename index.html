@@ -607,6 +607,7 @@
         <option value="checking">Checking</option>
       </select>
     </div>
+    <input id="transferDesc" class="qik-input" placeholder="Description">
     <input id="transferAmount" type="number" class="qik-input" placeholder="Amount">
     <input id="transferNote" class="qik-input" placeholder="Note (optional)">
   </div>
@@ -625,14 +626,13 @@
       <option value="bill">Bill</option>
     </select>
     <input id="recurringName"   class="qik-input" placeholder="Name (Paycheck, Rent…)">
-    <input id="recurringDesc"   class="qik-input" placeholder="Description (optional)">
     <div class="category-wrap">
       <select id="recurringCategory" class="qik-input">
         <option value="">— Select Category —</option>
       </select>
     </div>
     <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
-    <input id="recurringDate"   class="qik-input" type="date">
+    <input id="recurringDate"   class="qik-input" type="date" placeholder="Date">
     <select id="recurringFrequency" class="qik-input">
       <option value="weekly">Weekly</option>
       <option value="biweekly">Biweekly</option>
@@ -652,7 +652,6 @@
       <option value="bill">Bill</option>
     </select>
     <input id="editRecurringName" class="qik-input" placeholder="Name">
-    <input id="editRecurringDesc" class="qik-input" placeholder="Description (optional)">
     <div class="category-wrap">
       <select id="editRecurringCategory" class="qik-input">
         <option value="">— Select Category —</option>
@@ -673,7 +672,7 @@
   </div>
 
   <div class="list-header" style="grid-template-columns:1.2fr 0.9fr 0.7fr 0.7fr 0.7fr auto;">
-    <span>Name</span><span>Cat</span><span>Amt</span><span>Freq</span><span>Next</span><span></span>
+    <span>Name</span><span>Amt</span><span>Freq</span><span></span>
   </div>
   <div id="recurringList"></div>
 
@@ -1276,7 +1275,6 @@
         <span class="amount ${isIncome ? "" : "bill"}">
           ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
         </span>
-        <span>${d.frequency}</span>
         <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
         <div class="row-actions">
           <button class="edit-btn">✎</button>
@@ -1285,8 +1283,6 @@
       `;
       row.children[0].textContent = d.name;
       row.children[0].title = d.name + (d.description ? ' — ' + d.description : '');
-      row.children[1].textContent = d.category || "—";
-      row.children[1].title = d.category || '';
       const editBtn = row.querySelector(".edit-btn");
       const delBtn  = row.querySelector(".danger");
       editBtn.addEventListener("click", () => window.startEditRecurring(
@@ -1305,7 +1301,6 @@
     editingRecurringId = id;
     document.getElementById("editRecurringType").value      = type;
     document.getElementById("editRecurringName").value      = name;
-    document.getElementById("editRecurringDesc").value      = description;
     document.getElementById("editRecurringAmount").value    = amount;
     document.getElementById("editRecurringFrequency").value = frequency;
     document.getElementById("editRecurringDate").value      = dateStr;
@@ -1330,7 +1325,6 @@
 
     const type        = document.getElementById("editRecurringType").value;
     const name        = document.getElementById("editRecurringName").value.trim();
-    const description = document.getElementById("editRecurringDesc").value.trim();
     const category    = document.getElementById("editRecurringCategory").value;
     const amount      = Number(document.getElementById("editRecurringAmount").value);
     const dateStr     = document.getElementById("editRecurringDate").value;
@@ -1383,7 +1377,6 @@
 
     const type        = document.getElementById("recurringType").value;
     const name        = document.getElementById("recurringName").value.trim();
-    const description = document.getElementById("recurringDesc").value.trim();
     const category    = document.getElementById("recurringCategory").value;
     const amount      = Number(document.getElementById("recurringAmount").value);
     const dateStr     = document.getElementById("recurringDate").value;
@@ -1407,7 +1400,6 @@
     }
 
     document.getElementById("recurringName").value     = "";
-    document.getElementById("recurringDesc").value     = "";
     document.getElementById("recurringCategory").value = "";
     document.getElementById("recurringAmount").value   = "";
     document.getElementById("recurringDate").value     = "";
@@ -1449,6 +1441,7 @@
     if (type === "transfer") {
       const from   = document.getElementById("transferFrom").value;
       const to     = document.getElementById("transferTo").value;
+      const desc = document.getElementById("transferDesc").value;
       const amount = Number(document.getElementById("transferAmount").value);
       const note   = document.getElementById("transferNote").value;
 
@@ -1464,7 +1457,7 @@
         cleared: false,
         date: serverTimestamp()
       });
-
+      document.getElementById("transferDesc").value = "";
       document.getElementById("transferAmount").value = "";
       document.getElementById("transferNote").value   = "";
     } else {
