@@ -405,75 +405,54 @@
       padding: 4px 2px 0;
     }
 
-    .page { display: none; }
-
-    /* ── BUDGET CATEGORY DROPDOWN ── */
-    .category-wrap {
-      position: relative;
-    }
-    .category-wrap select {
-      width: 100%;
-    }
 
     /* ── BUDGET TRACKER ── */
-    .budget-card {
-      background: #080d18;
-      border: 1px solid #1a2540;
-      border-radius: 12px;
-      padding: 12px 14px;
+    .budget-bar-wrap {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 3px;
     }
-    .budget-card .budget-header {
+    .budget-item {
+      background: #080d18;
+      border: 1px solid #1a2540;
+      border-radius: 10px;
+      padding: 9px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .budget-item.over  { border-color: #7f1d1d; }
+    .budget-item.warn  { border-color: #78350f; }
+    .budget-item-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-size: 13px;
+      font-size: 12px;
     }
-    .budget-card .budget-header .cat-name {
-      font-weight: 600;
-      color: #e2e8f0;
-    }
-    .budget-card .budget-header .budget-amounts {
-      font-size: 11px;
-      opacity: 0.7;
-    }
-    .budget-bar-wrap {
+    .budget-item-top .bname { font-weight: 500; }
+    .budget-item-top .bamts { font-size: 11px; opacity: 0.6; }
+    .budget-item-top .bamts.over  { color: #f87171; opacity: 1; }
+    .budget-item-top .bamts.warn  { color: #fb923c; opacity: 1; }
+    .budget-track {
       width: 100%;
-      height: 8px;
+      height: 5px;
       background: #1a2540;
-      border-radius: 4px;
+      border-radius: 99px;
       overflow: hidden;
     }
-    .budget-bar {
+    .budget-fill {
       height: 100%;
-      border-radius: 4px;
+      border-radius: 99px;
+      background: #38bdf8;
       transition: width 0.4s ease;
     }
-    .budget-bar.green  { background: #4ade80; }
-    .budget-bar.yellow { background: #fbbf24; }
-    .budget-bar.red    { background: #f87171; }
+    .budget-fill.warn { background: #fb923c; }
+    .budget-fill.over { background: #f87171; }
 
-    .budget-status {
-      font-size: 10px;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      font-weight: 600;
-    }
-    .budget-status.under   { color: #4ade80; }
-    .budget-status.warning { color: #fbbf24; }
-    .budget-status.over    { color: #f87171; }
-
-    #budgetList, #budgetTrackerList {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .budget-mgr-row {
+    /* ── CATEGORIES PAGE ── */
+    .cat-row {
       display: grid;
-      grid-template-columns: 1.5fr 1fr auto;
+      grid-template-columns: 1fr auto auto auto;
       align-items: center;
       gap: 6px;
       font-size: 12px;
@@ -481,36 +460,11 @@
       background: #080d18;
       border-radius: 9px;
       border: 1px solid #1a2540;
-      line-height: 1.2;
     }
-    .budget-mgr-row span {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .budget-mgr-row .row-actions {
-      display: flex;
-      gap: 4px;
-      justify-content: flex-end;
-    }
+    .cat-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #catList { display: flex; flex-direction: column; gap: 4px; }
 
-    /* ── ALERT BANNER ── */
-    .budget-alert {
-      background: #2a1f00;
-      border: 1px solid #fbbf24;
-      border-radius: 10px;
-      padding: 8px 12px;
-      font-size: 11px;
-      color: #fbbf24;
-      text-align: center;
-      display: none;
-    }
-    .budget-alert.over-budget {
-      background: #3d1a1a;
-      border-color: #f87171;
-      color: #f87171;
-    }
-    .budget-alert.visible { display: block; }
+    .page { display: none; }
   </style>
 </head>
 <body>
@@ -561,14 +515,14 @@
     <p id="leftToSpend">—</p>
   </div>
 
-  <div id="dashBudgetAlerts" style="display:flex;flex-direction:column;gap:4px;"></div>
+
+  <div class="budget-bar-wrap" id="budgetDashboard"></div>
 
   <button id="goPay"        class="primary">Income &amp; Bills</button>
   <button id="goTx"         class="primary">Add Transaction</button>
   <button id="goRegister"   class="primary">Register</button>
-  <button id="goBudgetMgr"  class="primary">Budget Categories</button>
-  <button id="goBudgetTracker" class="primary">Budget Tracker</button>
-  <button id="goProjections" class="primary">Projections</button>
+  <button id="goProjections"  class="primary">Projections</button>
+  <button id="goCategories"   class="primary">Budget &amp; Categories</button>
   <button id="logoutBtn"    class="secondary">Logout</button>
 </div>
 
@@ -584,15 +538,13 @@
 
   <!-- Normal fields (hidden for transfer) -->
   <div id="normalFields" style="display:flex;flex-direction:column;gap:8px;">
-    <input id="amount"   type="number" class="qik-input" placeholder="Amount">
-    <div class="category-wrap">
-      <select id="category" class="qik-input">
-        <option value="">— Select Category —</option>
-      </select>
-    </div>
-    <input id="note"     class="qik-input" placeholder="Note (optional)">
+    <input id="amount"      type="number" class="qik-input" placeholder="Amount">
+    <select id="categorySelect" class="qik-input">
+      <option value="">— Select Category —</option>
+    </select>
+    <input id="description" class="qik-input" placeholder="Description (what/where)">
+    <input id="note"        class="qik-input" placeholder="Note (optional)">
   </div>
-  <div id="txBudgetAlert" class="budget-alert"></div>
 
   <!-- Transfer fields -->
   <div id="transferFields" style="display:none;flex-direction:column;gap:8px;">
@@ -607,9 +559,8 @@
         <option value="checking">Checking</option>
       </select>
     </div>
-    <input id="transferDesc" class="qik-input" placeholder="Description">
     <input id="transferAmount" type="number" class="qik-input" placeholder="Amount">
-    <input id="transferNote" class="qik-input" placeholder="Note (optional)">
+    <input id="transferNote"   class="qik-input" placeholder="Note (optional)">
   </div>
 
   <button id="addTxnBtn" class="primary">Save Transaction</button>
@@ -626,13 +577,9 @@
       <option value="bill">Bill</option>
     </select>
     <input id="recurringName"   class="qik-input" placeholder="Name (Paycheck, Rent…)">
-    <div class="category-wrap">
-      <select id="recurringCategory" class="qik-input">
-        <option value="">— Select Category —</option>
-      </select>
-    </div>
+    <input id="recurringDesc"   class="qik-input" placeholder="Description (optional)">
     <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
-    <input id="recurringDate"   class="qik-input" type="date" placeholder="Date">
+    <input id="recurringDate"   class="qik-input" type="date">
     <select id="recurringFrequency" class="qik-input">
       <option value="weekly">Weekly</option>
       <option value="biweekly">Biweekly</option>
@@ -644,35 +591,8 @@
 
   <hr class="divider">
 
-  <!-- Inline edit panel for recurring items -->
-  <div id="editRecurringOverlay" class="edit-overlay">
-    <p class="section-label" style="margin:0;">Edit Recurring Item</p>
-    <select id="editRecurringType" class="qik-input">
-      <option value="income">Income</option>
-      <option value="bill">Bill</option>
-    </select>
-    <input id="editRecurringName" class="qik-input" placeholder="Name">
-    <div class="category-wrap">
-      <select id="editRecurringCategory" class="qik-input">
-        <option value="">— Select Category —</option>
-      </select>
-    </div>
-    <input id="editRecurringAmount" type="number" class="qik-input" placeholder="Amount">
-    <input id="editRecurringDate" type="date" class="qik-input">
-    <select id="editRecurringFrequency" class="qik-input">
-      <option value="weekly">Weekly</option>
-      <option value="biweekly">Biweekly</option>
-      <option value="monthly">Monthly</option>
-      <option value="yearly">Yearly</option>
-    </select>
-    <div class="edit-row">
-      <button id="saveEditRecurringBtn" class="primary" style="flex:1;">Save</button>
-      <button id="cancelEditRecurringBtn" class="secondary" style="flex:1;">Cancel</button>
-    </div>
-  </div>
-
-  <div class="list-header" style="grid-template-columns:1.2fr 0.9fr 0.7fr 0.7fr 0.7fr auto;">
-    <span>Name</span><span>Amt</span><span>Freq</span><span></span>
+  <div class="list-header">
+    <span>Name</span><span>Amt</span><span>Freq</span><span>Next</span><span></span>
   </div>
   <div id="recurringList"></div>
 
@@ -686,13 +606,12 @@
   <!-- Inline edit panel -->
   <div id="editOverlay" class="edit-overlay">
     <p class="section-label" style="margin:0;">Edit Transaction</p>
-    <input id="editAmount"   type="number" class="qik-input" placeholder="Amount">
-    <div class="category-wrap">
-      <select id="editCategory" class="qik-input">
-        <option value="">— Select Category —</option>
-      </select>
-    </div>
-    <input id="editNote"     class="qik-input" placeholder="Note">
+    <input id="editAmount"      type="number" class="qik-input" placeholder="Amount">
+    <select id="editCategorySelect" class="qik-input">
+      <option value="">— Select Category —</option>
+    </select>
+    <input id="editDescription" class="qik-input" placeholder="Description">
+    <input id="editNote"        class="qik-input" placeholder="Note">
     <div class="edit-row">
       <button id="saveEditBtn" class="primary" style="flex:1;">Save</button>
       <button id="cancelEditBtn" class="secondary" style="flex:1;">Cancel</button>
@@ -700,43 +619,29 @@
   </div>
 
   <div class="list-header tx-header">
-    <span>Type</span><span>Cat</span><span>Note</span><span>Amt</span><span>Clr</span><span></span><span></span>
+    <span>Type</span><span>Cat</span><span>Desc</span><span>Amt</span><span>Clr</span><span></span><span></span>
   </div>
   <div id="registerList"></div>
   <button class="back secondary">← Back</button>
 </div>
 
-<!-- ════ BUDGET MANAGER ════ -->
-<div id="budgetMgrPage" class="card page">
-  <h2>Budget Categories</h2>
-  <p style="font-size:11px;opacity:0.4;text-align:center;margin:0;">
-    Set monthly spending limits for each category. Each user manages their own budgets.
-  </p>
+<!-- ════ CATEGORIES ════ -->
+<div id="categoriesPage" class="card page">
+  <h2>Budget &amp; Categories</h2>
+  <p style="font-size:11px;opacity:0.4;text-align:center;margin:0;">Set monthly spending limits per category.</p>
 
   <div style="display:flex;flex-direction:column;gap:8px;">
-    <input id="budgetCatName"  class="qik-input" placeholder="Category name (e.g. Groceries)">
-    <input id="budgetCatLimit" class="qik-input" type="number" placeholder="Monthly limit ($)">
-    <button id="saveBudgetCatBtn" class="primary">Add Category</button>
+    <input id="catName"  class="qik-input" placeholder="Category name (e.g. Groceries)">
+    <input id="catLimit" class="qik-input" type="number" placeholder="Monthly budget limit ($)">
+    <button id="saveCatBtn" class="primary">Add Category</button>
   </div>
 
   <hr class="divider">
 
-  <div class="list-header" style="grid-template-columns:1.5fr 1fr auto;">
-    <span>Category</span><span>Limit</span><span></span>
+  <div class="list-header" style="grid-template-columns:1fr auto auto auto;">
+    <span>Category</span><span>Limit</span><span></span><span></span>
   </div>
-  <div id="budgetList"></div>
-
-  <button class="back secondary">← Back</button>
-</div>
-
-<!-- ════ BUDGET TRACKER ════ -->
-<div id="budgetTrackerPage" class="card page">
-  <h2>Budget Tracker</h2>
-  <p style="font-size:11px;opacity:0.4;text-align:center;margin:0;">
-    See how your spending compares to your monthly limits.
-  </p>
-
-  <div id="budgetTrackerList"></div>
+  <div id="catList"></div>
 
   <button class="back secondary">← Back</button>
 </div>
@@ -818,7 +723,7 @@
   }
 
   /* ── PAGES ── */
-  const PAGES = ["auth","dashboard","txPage","payPage","registerPage","budgetMgrPage","budgetTrackerPage","projectionsPage"];
+  const PAGES = ["auth","dashboard","txPage","payPage","registerPage","projectionsPage","categoriesPage"];
   function show(id) {
     PAGES.forEach(p => document.getElementById(p).style.display = "none");
     document.getElementById(id).style.display = "flex";
@@ -846,280 +751,6 @@
   }
 
   /* ════════════════════════════════════════
-     BUDGET CATEGORIES (per-user)
-     Stored in users/{uid}/budgetCategories
-     Each doc: { name, monthlyLimit, createdAt }
-  ════════════════════════════════════════ */
-  let cachedBudgetCategories = [];
-
-  async function loadBudgetCategories(uid) {
-    const snap = await getDocs(collection(db, "users", uid, "budgetCategories"));
-    cachedBudgetCategories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    cachedBudgetCategories.sort((a, b) => a.name.localeCompare(b.name));
-    populateCategoryDropdowns();
-    return cachedBudgetCategories;
-  }
-
-  function populateCategoryDropdowns() {
-    const selectors = ["category", "editCategory", "recurringCategory", "editRecurringCategory"];
-    selectors.forEach(selId => {
-      const sel = document.getElementById(selId);
-      if (!sel) return;
-      const currentVal = sel.value;
-      sel.innerHTML = '<option value="">— Select Category —</option>';
-      cachedBudgetCategories.forEach(cat => {
-        const opt = document.createElement("option");
-        opt.value = cat.name;
-        opt.textContent = cat.name;
-        sel.appendChild(opt);
-      });
-      const otherOpt = document.createElement("option");
-      otherOpt.value = "__other__";
-      otherOpt.textContent = "Other (type your own)";
-      sel.appendChild(otherOpt);
-      if (currentVal) sel.value = currentVal;
-    });
-  }
-
-  function handleCategoryOther(selectEl) {
-    if (selectEl.value === "__other__") {
-      const custom = prompt("Enter custom category:");
-      if (custom && custom.trim()) {
-        const opt = document.createElement("option");
-        opt.value = custom.trim();
-        opt.textContent = custom.trim();
-        selectEl.insertBefore(opt, selectEl.querySelector('[value="__other__"]'));
-        selectEl.value = custom.trim();
-      } else {
-        selectEl.value = "";
-      }
-    }
-  }
-
-  document.getElementById("category").addEventListener("change", function() { handleCategoryOther(this); });
-  document.getElementById("editCategory").addEventListener("change", function() { handleCategoryOther(this); });
-  document.getElementById("recurringCategory").addEventListener("change", function() { handleCategoryOther(this); });
-  document.getElementById("editRecurringCategory").addEventListener("change", function() { handleCategoryOther(this); });
-
-  async function loadBudgetList(uid) {
-    const container = document.getElementById("budgetList");
-    container.innerHTML = "";
-
-    const cats = await loadBudgetCategories(uid);
-
-    cats.forEach(cat => {
-      const row = document.createElement("div");
-      row.className = "budget-mgr-row";
-      row.innerHTML = `
-        <span></span>
-        <span style="color:#38bdf8;"></span>
-        <div class="row-actions">
-          <button class="edit-btn">✎</button>
-          <button class="danger">✕</button>
-        </div>
-      `;
-      row.children[0].textContent = cat.name;
-      row.children[0].title = cat.name;
-      row.children[1].textContent = `$${Number(cat.monthlyLimit).toFixed(2)}/mo`;
-      const editBtn = row.querySelector(".edit-btn");
-      const delBtn  = row.querySelector(".danger");
-      editBtn.addEventListener("click", () => window.editBudgetCat(cat.id, cat.name, cat.monthlyLimit));
-      delBtn.addEventListener("click", () => window.deleteBudgetCat(cat.id));
-      container.appendChild(row);
-    });
-  }
-
-  document.getElementById("saveBudgetCatBtn").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const name  = document.getElementById("budgetCatName").value.trim();
-    const limit = Number(document.getElementById("budgetCatLimit").value);
-
-    if (!name || !limit || limit <= 0) {
-      toast("Enter a category name and valid limit.");
-      return;
-    }
-
-    const existing = cachedBudgetCategories.find(c => c.name.toLowerCase() === name.toLowerCase());
-    if (existing) {
-      toast("Category already exists! Edit it instead.");
-      return;
-    }
-
-    try {
-      await addDoc(collection(db, "users", user.uid, "budgetCategories"), {
-        name, monthlyLimit: limit, createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Add category:", e);
-      toast("Error saving category: " + e.message);
-      return;
-    }
-
-    document.getElementById("budgetCatName").value  = "";
-    document.getElementById("budgetCatLimit").value = "";
-
-    loadBudgetList(user.uid);
-    toast("Category added!");
-  });
-
-  window.deleteBudgetCat = async id => {
-    const user = auth.currentUser;
-    if (!user) return;
-    await deleteDoc(doc(db, "users", user.uid, "budgetCategories", id));
-    loadBudgetList(user.uid);
-    toast("Category deleted.");
-  };
-
-  window.editBudgetCat = async (id, name, limit) => {
-    const newLimit = prompt(`Update monthly limit for "${name}":`, limit);
-    if (newLimit === null) return;
-    const parsed = Number(newLimit);
-    if (!parsed || parsed <= 0) { toast("Invalid limit."); return; }
-
-    const user = auth.currentUser;
-    if (!user) return;
-    await updateDoc(doc(db, "users", user.uid, "budgetCategories", id), { monthlyLimit: parsed });
-    loadBudgetList(user.uid);
-    toast("Limit updated!");
-  };
-
-  /* ════════════════════════════════════════
-     BUDGET TRACKER
-     Calculates spending per category for the
-     current month and compares to limits.
-  ════════════════════════════════════════ */
-  async function loadBudgetTracker(uid) {
-    const container = document.getElementById("budgetTrackerList");
-    container.innerHTML = "";
-
-    const cats = cachedBudgetCategories.length ? cachedBudgetCategories : await loadBudgetCategories(uid);
-    if (cats.length === 0) {
-      container.innerHTML = '<p style="font-size:12px;opacity:0.4;text-align:center;">No budget categories set up yet. Add some in Budget Categories!</p>';
-      return;
-    }
-
-    const spending = await getMonthlySpending(uid);
-
-    cats.forEach(cat => {
-      const spent = spending[cat.name.toLowerCase()] || 0;
-      const limit = Number(cat.monthlyLimit);
-      const pct = limit > 0 ? (spent / limit) * 100 : 0;
-      const remaining = limit - spent;
-
-      let barClass = "green";
-      let statusClass = "under";
-      let statusText = "On Track";
-
-      if (pct >= 100) {
-        barClass = "red";
-        statusClass = "over";
-        statusText = `Over by ${fmt(spent - limit)}`;
-      } else if (pct >= 80) {
-        barClass = "yellow";
-        statusClass = "warning";
-        statusText = `${fmt(remaining)} left`;
-      } else {
-        statusText = `${fmt(remaining)} left`;
-      }
-
-      const card = document.createElement("div");
-      card.className = "budget-card";
-      card.innerHTML = `
-        <div class="budget-header">
-          <span class="cat-name">${cat.name}</span>
-          <span class="budget-amounts">${fmt(spent)} / ${fmt(limit)}</span>
-        </div>
-        <div class="budget-bar-wrap">
-          <div class="budget-bar ${barClass}" style="width:${Math.min(pct, 100)}%"></div>
-        </div>
-        <span class="budget-status ${statusClass}">${statusText}</span>
-      `;
-      container.appendChild(card);
-    });
-  }
-
-  async function getMonthlySpending(uid) {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-
-    const snap = await getDocs(collection(db, "users", uid, "transactions"));
-    const spending = {};
-
-    snap.forEach(s => {
-      const d = s.data();
-      if (d.type !== "expense") return;
-      const txDate = toDate(d.date);
-      if (!txDate || txDate < monthStart || txDate > monthEnd) return;
-      const cat = (d.category || "").toLowerCase();
-      if (!cat) return;
-      spending[cat] = (spending[cat] || 0) + Number(d.amount);
-    });
-
-    return spending;
-  }
-
-  /* ════════════════════════════════════════
-     BUDGET ALERTS
-     Check spending after saving a transaction
-     and show alerts on the dashboard.
-  ════════════════════════════════════════ */
-  async function checkBudgetAlert(uid, category) {
-    if (!category) return null;
-
-    const cats = cachedBudgetCategories.length ? cachedBudgetCategories : await loadBudgetCategories(uid);
-    const budgetCat = cats.find(c => c.name.toLowerCase() === category.toLowerCase());
-    if (!budgetCat) return null;
-
-    const spending = await getMonthlySpending(uid);
-    const spent = spending[category.toLowerCase()] || 0;
-    const limit = Number(budgetCat.monthlyLimit);
-    const pct = limit > 0 ? (spent / limit) * 100 : 0;
-
-    if (pct >= 100) {
-      return { type: "over", message: `Over budget! ${budgetCat.name}: ${fmt(spent)} / ${fmt(limit)} (${Math.round(pct)}%)` };
-    } else if (pct >= 80) {
-      return { type: "warning", message: `Close to limit! ${budgetCat.name}: ${fmt(spent)} / ${fmt(limit)} (${Math.round(pct)}%)` };
-    }
-    return null;
-  }
-
-  function showTxBudgetAlert(alert) {
-    const el = document.getElementById("txBudgetAlert");
-    if (!alert) { el.classList.remove("visible"); return; }
-    el.textContent = alert.message;
-    el.className = "budget-alert visible" + (alert.type === "over" ? " over-budget" : "");
-  }
-
-  async function showDashBudgetAlerts(uid) {
-    const container = document.getElementById("dashBudgetAlerts");
-    container.innerHTML = "";
-
-    const cats = cachedBudgetCategories.length ? cachedBudgetCategories : await loadBudgetCategories(uid);
-    if (cats.length === 0) return;
-
-    const spending = await getMonthlySpending(uid);
-
-    cats.forEach(cat => {
-      const spent = spending[cat.name.toLowerCase()] || 0;
-      const limit = Number(cat.monthlyLimit);
-      const pct = limit > 0 ? (spent / limit) * 100 : 0;
-
-      if (pct >= 80) {
-        const alertDiv = document.createElement("div");
-        const isOver = pct >= 100;
-        alertDiv.className = "budget-alert visible" + (isOver ? " over-budget" : "");
-        alertDiv.textContent = isOver
-          ? `⚠ ${cat.name}: Over budget! ${fmt(spent)} / ${fmt(limit)}`
-          : `⚠ ${cat.name}: ${Math.round(pct)}% used — ${fmt(limit - spent)} left`;
-        container.appendChild(alertDiv);
-      }
-    });
-  }
-
-  /* ════════════════════════════════════════
      AUTO-POST RECURRING ITEMS
      Fires on login. For each recurring item
      whose nextDate <= today, post a transaction
@@ -1141,8 +772,8 @@
         batch.push(addDoc(collection(db, "users", uid, "transactions"), {
           type:      d.type === "income" ? "income" : "expense",
           amount:    Number(d.amount),
-          category:  d.category || d.name,
-          note:      `Auto: ${d.frequency}${d.description ? ' — ' + d.description : ''}`,
+          category:  d.name,
+          note:      `Auto: ${d.frequency}`,
           source:    "recurring",
           cleared:   false,
           date:      Timestamp.fromDate(nextDate)
@@ -1268,97 +899,20 @@
 
       const row = document.createElement("div");
       row.className = "slim-row";
-      row.style.gridTemplateColumns = "1.2fr 0.9fr 0.7fr 0.7fr 0.7fr auto";
       row.innerHTML = `
-        <span></span>
-        <span></span>
+        <span title="${d.name}">${d.name}</span>
         <span class="amount ${isIncome ? "" : "bill"}">
           ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
         </span>
+        <span>${d.frequency}</span>
         <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
         <div class="row-actions">
-          <button class="edit-btn">✎</button>
-          <button class="danger">✕</button>
+          <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
         </div>
       `;
-      row.children[0].textContent = d.name;
-      row.children[0].title = d.name + (d.description ? ' — ' + d.description : '');
-      const editBtn = row.querySelector(".edit-btn");
-      const delBtn  = row.querySelector(".danger");
-      editBtn.addEventListener("click", () => window.startEditRecurring(
-        docSnap.id, d.type || "bill", d.name || "", d.description || "",
-        d.category || "", Number(d.amount), d.frequency, next ? next.toISOString().slice(0, 10) : ""
-      ));
-      delBtn.addEventListener("click", () => window.deleteRecurring(docSnap.id));
       container.appendChild(row);
     });
   }
-
-  /* ── EDIT RECURRING ── */
-  let editingRecurringId = null;
-
-  window.startEditRecurring = (id, type, name, description, category, amount, frequency, dateStr) => {
-    editingRecurringId = id;
-    document.getElementById("editRecurringType").value      = type;
-    document.getElementById("editRecurringName").value      = name;
-    document.getElementById("editRecurringAmount").value    = amount;
-    document.getElementById("editRecurringFrequency").value = frequency;
-    document.getElementById("editRecurringDate").value      = dateStr;
-
-    const catSel = document.getElementById("editRecurringCategory");
-    const optExists = Array.from(catSel.options).some(o => o.value === category);
-    if (!optExists && category) {
-      const opt = document.createElement("option");
-      opt.value = category;
-      opt.textContent = category;
-      catSel.insertBefore(opt, catSel.querySelector('[value="__other__"]'));
-    }
-    catSel.value = category;
-
-    document.getElementById("editRecurringOverlay").classList.add("visible");
-    document.getElementById("editRecurringOverlay").scrollIntoView({ behavior: "smooth" });
-  };
-
-  document.getElementById("saveEditRecurringBtn").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user || !editingRecurringId) return;
-
-    const type        = document.getElementById("editRecurringType").value;
-    const name        = document.getElementById("editRecurringName").value.trim();
-    const category    = document.getElementById("editRecurringCategory").value;
-    const amount      = Number(document.getElementById("editRecurringAmount").value);
-    const dateStr     = document.getElementById("editRecurringDate").value;
-    const frequency   = document.getElementById("editRecurringFrequency").value;
-
-    if (!name || !amount) {
-      toast("Name and amount are required.");
-      return;
-    }
-
-    const updateData = { type, name, description, category, amount, frequency };
-    if (dateStr) {
-      updateData.nextDate = Timestamp.fromDate(new Date(dateStr + "T00:00:00"));
-    }
-
-    try {
-      await updateDoc(doc(db, "users", user.uid, "recurring", editingRecurringId), updateData);
-    } catch (e) {
-      console.error("Edit recurring:", e);
-      toast("Error updating: " + e.message);
-      return;
-    }
-
-    editingRecurringId = null;
-    document.getElementById("editRecurringOverlay").classList.remove("visible");
-    loadRecurring(user.uid);
-    calculateLeft(user.uid);
-    toast("Updated!");
-  });
-
-  document.getElementById("cancelEditRecurringBtn").addEventListener("click", () => {
-    editingRecurringId = null;
-    document.getElementById("editRecurringOverlay").classList.remove("visible");
-  });
 
   window.deleteRecurring = async id => {
     const user = auth.currentUser;
@@ -1375,39 +929,226 @@
     const user = auth.currentUser;
     if (!user) return;
 
-    const type        = document.getElementById("recurringType").value;
-    const name        = document.getElementById("recurringName").value.trim();
-    const category    = document.getElementById("recurringCategory").value;
-    const amount      = Number(document.getElementById("recurringAmount").value);
-    const dateStr     = document.getElementById("recurringDate").value;
-    const frequency   = document.getElementById("recurringFrequency").value;
+    const type      = document.getElementById("recurringType").value;
+    const name      = document.getElementById("recurringName").value.trim();
+    const amount    = Number(document.getElementById("recurringAmount").value);
+    const dateStr   = document.getElementById("recurringDate").value;
+    const frequency = document.getElementById("recurringFrequency").value;
 
-    if (!name || !amount || !dateStr || !category) {
-      toast("Name, category, amount, and date are required.");
-      return;
-    }
+    if (!name || !amount || !dateStr) return;
 
-    try {
-      await addDoc(collection(db, "users", user.uid, "recurring"), {
-        type, name, description, category, amount, frequency,
-        nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Save recurring:", e);
-      toast("Error saving: " + e.message);
-      return;
-    }
+    const recurringDesc = document.getElementById("recurringDesc").value.trim();
+    await addDoc(collection(db, "users", user.uid, "recurring"), {
+      type, name, description: recurringDesc, amount, frequency,
+      nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
+      createdAt: serverTimestamp()
+    });
 
-    document.getElementById("recurringName").value     = "";
-    document.getElementById("recurringCategory").value = "";
-    document.getElementById("recurringAmount").value   = "";
-    document.getElementById("recurringDate").value     = "";
+    document.getElementById("recurringName").value   = "";
+    document.getElementById("recurringDesc").value   = "";
+    document.getElementById("recurringAmount").value = "";
+    document.getElementById("recurringDate").value   = "";
 
     loadRecurring(user.uid);
     calculateLeft(user.uid);
     toast("Saved!");
   });
+
+
+  /* ════════════════════════════════════════
+     CATEGORIES CACHE
+     Loaded once on login, refreshed on any
+     category add/delete. Shared by all
+     functions that need the user's categories.
+  ════════════════════════════════════════ */
+  let _catCache = []; // { id, name, limit }
+
+  async function loadCatCache(uid) {
+    const snap = await getDocs(
+      query(collection(db, "users", uid, "categories"), orderBy("name"))
+    );
+    _catCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return _catCache;
+  }
+
+  function populateCatSelects() {
+    const selects = ["categorySelect", "editCategorySelect"];
+    selects.forEach(sid => {
+      const el = document.getElementById(sid);
+      if (!el) return;
+      const cur = el.value;
+      el.innerHTML = '<option value="">— Select Category —</option>';
+      _catCache.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name + (c.limit ? ` ($${Number(c.limit).toFixed(0)}/mo)` : "");
+        el.appendChild(opt);
+      });
+      el.value = cur; // restore selection if still valid
+    });
+  }
+
+
+  /* ════════════════════════════════════════
+     CATEGORIES PAGE
+  ════════════════════════════════════════ */
+  async function loadCatList(uid) {
+    await loadCatCache(uid);
+    populateCatSelects();
+
+    const container = document.getElementById("catList");
+    container.innerHTML = "";
+
+    _catCache.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "cat-row";
+      row.innerHTML = `
+        <span title="${c.name}">${c.name}</span>
+        <span style="color:#38bdf8;">$${Number(c.limit||0).toFixed(0)}/mo</span>
+        <button class="edit-btn" onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g,"\'")}',${c.limit||0})">✎</button>
+        <button class="danger"   onclick="window.deleteCat('${c.id}')">✕</button>
+      `;
+      container.appendChild(row);
+    });
+  }
+
+  document.getElementById("saveCatBtn").addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const name  = document.getElementById("catName").value.trim();
+    const limit = Number(document.getElementById("catLimit").value);
+    if (!name) return;
+
+    // Check for duplicate
+    if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+      toast("Category already exists.");
+      return;
+    }
+
+    await addDoc(collection(db, "users", user.uid, "categories"), {
+      name, limit: limit || 0, createdAt: serverTimestamp()
+    });
+    document.getElementById("catName").value  = "";
+    document.getElementById("catLimit").value = "";
+    loadCatList(user.uid);
+    loadBudgetDashboard(user.uid);
+    toast("Category added!");
+  });
+
+  window.deleteCat = async id => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid, "categories", id));
+    loadCatList(user.uid);
+    loadBudgetDashboard(user.uid);
+    toast("Deleted.");
+  };
+
+  let editingCatId = null;
+  window.startEditCat = (id, name, limit) => {
+    editingCatId = id;
+    document.getElementById("catName").value  = name;
+    document.getElementById("catLimit").value = limit;
+    document.getElementById("saveCatBtn").textContent = "Update Category";
+    document.getElementById("catName").focus();
+  };
+
+  // Override saveCatBtn to handle edit mode
+  document.getElementById("saveCatBtn").addEventListener("click", async () => {}, { once: false });
+  document.getElementById("saveCatBtn").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const name  = document.getElementById("catName").value.trim();
+    const limit = Number(document.getElementById("catLimit").value);
+    if (!name) return;
+
+    if (editingCatId) {
+      await updateDoc(doc(db, "users", user.uid, "categories", editingCatId), { name, limit: limit || 0 });
+      editingCatId = null;
+      document.getElementById("saveCatBtn").textContent = "Add Category";
+    } else {
+      if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+        toast("Category already exists."); return;
+      }
+      await addDoc(collection(db, "users", user.uid, "categories"), {
+        name, limit: limit || 0, createdAt: serverTimestamp()
+      });
+    }
+    document.getElementById("catName").value  = "";
+    document.getElementById("catLimit").value = "";
+    loadCatList(user.uid);
+    loadBudgetDashboard(user.uid);
+    toast("Saved!");
+  };
+
+
+  /* ════════════════════════════════════════
+     BUDGET DASHBOARD
+     Shows this month's spending per category
+     with progress bars and over/warn alerts.
+  ════════════════════════════════════════ */
+  async function loadBudgetDashboard(uid) {
+    const container = document.getElementById("budgetDashboard");
+    if (!container) return;
+
+    // Only show categories that have a budget limit
+    const cats = _catCache.length ? _catCache : await loadCatCache(uid);
+    const limitedCats = cats.filter(c => Number(c.limit) > 0);
+    if (limitedCats.length === 0) { container.innerHTML = ""; return; }
+
+    // Get this month's cleared expense transactions
+    const now       = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const snap = await getDocs(collection(db, "users", uid, "transactions"));
+    const spent = {}; // category -> total spent this month
+
+    snap.forEach(s => {
+      const d = s.data();
+      if (d.type !== "expense") return;
+      if (!d.cleared) return;
+      const txDate = toDate(d.date);
+      if (!txDate || txDate < monthStart) return;
+      const cat = d.category || "Uncategorized";
+      spent[cat] = (spent[cat] || 0) + Number(d.amount);
+    });
+
+    container.innerHTML = "";
+
+    let alertsToShow = [];
+
+    limitedCats.forEach(c => {
+      const lim  = Number(c.limit);
+      const used = spent[c.name] || 0;
+      const pct  = Math.min((used / lim) * 100, 100);
+      const isOver = used > lim;
+      const isWarn = !isOver && pct >= 80;
+
+      const item = document.createElement("div");
+      item.className = "budget-item" + (isOver ? " over" : isWarn ? " warn" : "");
+      item.innerHTML = `
+        <div class="budget-item-top">
+          <span class="bname">${c.name}</span>
+          <span class="bamts ${isOver ? "over" : isWarn ? "warn" : ""}">
+            $${used.toFixed(2)} / $${lim.toFixed(0)}
+          </span>
+        </div>
+        <div class="budget-track">
+          <div class="budget-fill ${isOver ? "over" : isWarn ? "warn" : ""}"
+               style="width:${pct}%"></div>
+        </div>
+      `;
+      container.appendChild(item);
+
+      if (isOver)  alertsToShow.push({ name: c.name, msg: `⚠️ Over budget on ${c.name}!`, level: "over" });
+      else if (isWarn) alertsToShow.push({ name: c.name, msg: `${c.name}: ${Math.round(pct)}% of budget used`, level: "warn" });
+    });
+
+    // Show alerts staggered
+    alertsToShow.forEach((a, i) => {
+      setTimeout(() => toast(a.msg), i * 1200);
+    });
+  }
 
   /* ════════════════════════════════════════
      TRANSFER TYPE TOGGLE
@@ -1432,7 +1173,7 @@
   /* ════════════════════════════════════════
      ADD TRANSACTION
   ════════════════════════════════════════ */
-  document.getElementById("addTxnBtn").addEventListener("click", async () => {
+  document.getElementById("addTxnBtn").onclick = async () => {
     const user = auth.currentUser;
     if (!user) return;
 
@@ -1441,7 +1182,6 @@
     if (type === "transfer") {
       const from   = document.getElementById("transferFrom").value;
       const to     = document.getElementById("transferTo").value;
-      const desc = document.getElementById("transferDesc").value;
       const amount = Number(document.getElementById("transferAmount").value);
       const note   = document.getElementById("transferNote").value;
 
@@ -1453,44 +1193,60 @@
         transferFrom: from,
         transferTo:   to,
         category: `${from} → ${to}`,
+        description: "",
         note,
         cleared: false,
         date: serverTimestamp()
       });
-      document.getElementById("transferDesc").value = "";
+
       document.getElementById("transferAmount").value = "";
       document.getElementById("transferNote").value   = "";
     } else {
-      const amount   = Number(document.getElementById("amount").value);
-      const category = document.getElementById("category").value;
-      const note     = document.getElementById("note").value;
+      const amount      = Number(document.getElementById("amount").value);
+      const category    = document.getElementById("categorySelect").value;
+      const description = document.getElementById("description").value.trim();
+      const note        = document.getElementById("note").value.trim();
 
       if (!amount || amount <= 0) return;
-      if (!category) { toast("Please select a category."); return; }
 
       await addDoc(collection(db, "users", user.uid, "transactions"), {
-        type, amount, category, note,
+        type, amount, category, description, note,
         cleared: false,
         date: serverTimestamp()
       });
 
-      // Check budget alert for expense transactions
-      if (type === "expense") {
-        const alert = await checkBudgetAlert(user.uid, category);
-        showTxBudgetAlert(alert);
-        if (alert) toast(alert.message);
-      } else {
-        showTxBudgetAlert(null);
-      }
+      document.getElementById("amount").value      = "";
+      document.getElementById("categorySelect").value = "";
+      document.getElementById("description").value = "";
+      document.getElementById("note").value        = "";
 
-      document.getElementById("amount").value   = "";
-      document.getElementById("category").value = "";
-      document.getElementById("note").value     = "";
+      // Budget alert check
+      if (type === "expense" && category) {
+        const cat = _catCache.find(c => c.name === category);
+        if (cat && Number(cat.limit) > 0) {
+          // Tally this month
+          const now = new Date();
+          const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+          const snap = await getDocs(collection(db, "users", user.uid, "transactions"));
+          let monthTotal = 0;
+          snap.forEach(s => {
+            const d = s.data();
+            if (d.type !== "expense" || d.category !== category) return;
+            const txDate = toDate(d.date);
+            if (txDate && txDate >= monthStart) monthTotal += Number(d.amount);
+          });
+          monthTotal += amount; // include this new one optimistically
+          const pct = (monthTotal / Number(cat.limit)) * 100;
+          if (pct >= 100) toast(`⚠️ Over budget on ${category}!`);
+          else if (pct >= 80) toast(`${category}: ${Math.round(pct)}% of budget used`);
+        }
+      }
     }
 
     await calculateLeft(user.uid);
+    await loadBudgetDashboard(user.uid);
     toast("Transaction saved!");
-  });
+  };
 
   /* ════════════════════════════════════════
      REGISTER
@@ -1521,25 +1277,16 @@
 
       row.innerHTML = `
         <span><span class="type-badge ${badgeClass}">${d.type[0].toUpperCase()}</span></span>
-        <span></span>
-        <span></span>
+        <span title="${d.category || ""}">${d.category || "—"}</span>
+        <span title="${d.note || ""}">${d.note || "—"}</span>
         <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
         <div class="cleared-wrap">
-          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}>
+          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}
+            onchange="window.toggleCleared('${docSnap.id}', this.checked)">
         </div>
-        <button class="edit-btn">✎</button>
-        <button class="danger">✕</button>
+        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
+        <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
       `;
-      row.children[1].textContent = d.category || "—";
-      row.children[1].title = d.category || "";
-      row.children[2].textContent = d.note || "—";
-      row.children[2].title = d.note || "";
-      const checkbox = row.querySelector('input[type="checkbox"]');
-      checkbox.addEventListener("change", () => window.toggleCleared(docSnap.id, checkbox.checked));
-      const editBtn = row.querySelector(".edit-btn");
-      const delBtn  = row.querySelector(".danger");
-      editBtn.addEventListener("click", () => window.startEdit(docSnap.id, d.amount, d.category || "", d.note || "", isTransfer));
-      delBtn.addEventListener("click", () => window.deleteTxn(docSnap.id));
 
       container.appendChild(row);
     });
@@ -1563,51 +1310,39 @@
     toast("Deleted.");
   };
 
-  window.startEdit = (id, amount, category, note, isTransfer) => {
+  window.startEdit = (id, amount, category, desc, note, isTransfer) => {
     editingId = id;
-    document.getElementById("editAmount").value   = amount;
-    const editCatSel = document.getElementById("editCategory");
-    // If category exists in options, select it; otherwise add it as a custom option
-    const optExists = Array.from(editCatSel.options).some(o => o.value === category);
-    if (!optExists && category) {
-      const opt = document.createElement("option");
-      opt.value = category;
-      opt.textContent = category;
-      editCatSel.insertBefore(opt, editCatSel.querySelector('[value="__other__"]'));
-    }
-    editCatSel.value = category;
-    document.getElementById("editNote").value     = note;
-    editCatSel.disabled = isTransfer;
+    document.getElementById("editAmount").value          = amount;
+    document.getElementById("editCategorySelect").value  = category;
+    document.getElementById("editDescription").value     = desc;
+    document.getElementById("editNote").value            = note;
+    document.getElementById("editCategorySelect").disabled = isTransfer;
     document.getElementById("editOverlay").classList.add("visible");
     document.getElementById("editOverlay").scrollIntoView({ behavior: "smooth" });
   };
 
-  document.getElementById("saveEditBtn").addEventListener("click", async () => {
+  document.getElementById("saveEditBtn").onclick = async () => {
     const user = auth.currentUser;
     if (!user || !editingId) return;
 
-    const amount   = Number(document.getElementById("editAmount").value);
-    const category = document.getElementById("editCategory").value;
-    const note     = document.getElementById("editNote").value;
+    const amount      = Number(document.getElementById("editAmount").value);
+    const category    = document.getElementById("editCategorySelect").value;
+    const description = document.getElementById("editDescription").value.trim();
+    const note        = document.getElementById("editNote").value.trim();
 
     if (!amount || amount <= 0) return;
 
-    try {
-      await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
-        amount, category, note
-      });
-    } catch (e) {
-      console.error("Edit transaction:", e);
-      toast("Error updating: " + e.message);
-      return;
-    }
+    await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
+      amount, category, description, note
+    });
 
     editingId = null;
     document.getElementById("editOverlay").classList.remove("visible");
     loadRegister(user.uid);
     calculateLeft(user.uid);
+    loadBudgetDashboard(user.uid);
     toast("Updated!");
-  });
+  };
 
   document.getElementById("cancelEditBtn").addEventListener("click", () => {
     editingId = null;
@@ -1748,6 +1483,10 @@
   });
 
   /* ── NAV ── */
+  document.getElementById("goCategories").addEventListener("click", () => {
+    show("categoriesPage");
+    loadCatList(auth.currentUser?.uid);
+  });
   document.getElementById("goProjections").addEventListener("click", () => {
     document.getElementById("projOutput").style.display = "none";
     document.getElementById("projDate").value = "";
@@ -1758,20 +1497,13 @@
     loadRecurring(auth.currentUser?.uid);
   });
   document.getElementById("goTx").addEventListener("click", () => {
-    showTxBudgetAlert(null);
     show("txPage");
+    populateCatSelects();
   });
   document.getElementById("goRegister").addEventListener("click", () => {
     show("registerPage");
     loadRegister(auth.currentUser?.uid);
-  });
-  document.getElementById("goBudgetMgr").addEventListener("click", () => {
-    show("budgetMgrPage");
-    loadBudgetList(auth.currentUser?.uid);
-  });
-  document.getElementById("goBudgetTracker").addEventListener("click", () => {
-    show("budgetTrackerPage");
-    loadBudgetTracker(auth.currentUser?.uid);
+    populateCatSelects();
   });
   document.querySelectorAll(".back").forEach(btn =>
     btn.addEventListener("click", () => show("dashboard"))
@@ -1787,15 +1519,11 @@
       ["currentBalance","savingsBalance","availableBalance","leftToSpend"]
         .forEach(id => document.getElementById(id).textContent = "…");
 
-      // Load budget categories (non-blocking — don't let failure stop balances)
-      try { await loadBudgetCategories(user.uid); } catch (e) { console.warn("Budget categories:", e); }
-
       // Process due recurring items FIRST, then recalculate
-      try { await processRecurring(user.uid); } catch (e) { console.warn("Process recurring:", e); }
-      try { await calculateLeft(user.uid); } catch (e) { console.warn("Calculate left:", e); }
-
-      // Show budget alerts on dashboard
-      try { await showDashBudgetAlerts(user.uid); } catch (e) { console.warn("Budget alerts:", e); }
+      await processRecurring(user.uid);
+      await loadCatCache(user.uid);
+      await calculateLeft(user.uid);
+      await loadBudgetDashboard(user.uid);
     } else {
       show("auth");
     }
