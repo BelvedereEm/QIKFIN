@@ -885,7 +885,7 @@ async function calculateLeft(uid) {
     }
   }
 
-  const left = balances.available + incomeDue - billsDue;
+  const left = balances.checking - billsDue;
 
   const el = document.getElementById("leftToSpend");
   el.textContent = fmt(left);
