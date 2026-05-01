@@ -192,7 +192,7 @@
     /* ── SLIM LIST ROWS ── */
     .list-header {
       display: grid;
-      grid-template-columns: 1.8fr 0.9fr 0.8fr 0.9fr auto;
+      grid-template-columns: 0.7fr 1.6fr 0.9fr 1rem auto auto;
       gap: 6px;
       padding: 4px 10px;
       font-size: 10px;
@@ -233,7 +233,7 @@
     /* tx rows: type | category | note | amount | cleared | edit | del */
     .tx-row {
       display: grid;
-      grid-template-columns: 0.6fr 1.1fr 1fr 0.9fr 1rem auto auto;
+      grid-template-columns: 0.7fr 1.6fr 0.9fr 1rem auto auto;
       align-items: center;
       gap: 6px;
       font-size: 12px;
@@ -591,9 +591,9 @@
 
   <hr class="divider">
 
-  <div class="list-header">
-    <span>Name</span><span>Amt</span><span>Freq</span><span>Next</span><span></span>
-  </div>
+<div class="list-header tx-header">
+  <span>Type</span><span>Desc</span><span>Amt</span><span></span><span></span><span></span>
+</div>
   <div id="recurringList"></div>
 
   <button class="back secondary">← Back</button>
@@ -1275,18 +1275,40 @@
       const sign       = d.type === "income"   ? "+" :
                          d.type === "expense"  ? "-" : "⇄";
 
-      row.innerHTML = `
-        <span><span class="type-badge ${badgeClass}">${d.type[0].toUpperCase()}</span></span>
-        <span title="${d.category || ""}">${d.category || "—"}</span>
-        <span title="${d.note || ""}">${d.note || "—"}</span>
-        <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
-        <div class="cleared-wrap">
-          <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}
-            onchange="window.toggleCleared('${docSnap.id}', this.checked)">
-        </div>
-        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
-        <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
-      `;
+const desc = d.description || d.note || d.category || "—";
+
+row.innerHTML = `
+  <span>
+    <span class="type-badge ${badgeClass}">
+      ${d.type[0].toUpperCase()}
+    </span>
+  </span>
+
+  <span title="${desc}">${desc}</span>
+
+  <span style="${amtColor}">
+    ${sign}$${Number(d.amount).toFixed(2)}
+  </span>
+
+  <div class="cleared-wrap">
+    <input type="checkbox"
+      ${isCleared ? "checked" : ""}
+      onchange="window.toggleCleared('${docSnap.id}', this.checked)">
+  </div>
+
+  <button class="edit-btn"
+    onclick="window.startEdit(
+      '${docSnap.id}',
+      ${d.amount},
+      '${(d.category||"").replace(/'/g,"\\'")}',
+      '${(d.description||"").replace(/'/g,"\\'")}',
+      '${(d.note||"").replace(/'/g,"\\'")}',
+      ${isTransfer}
+    )">✎</button>
+
+  <button class="danger"
+    onclick="window.deleteTxn('${docSnap.id}')">✕</button>
+`;
 
       container.appendChild(row);
     });
