@@ -587,6 +587,7 @@
       <option value="yearly">Yearly</option>
     </select>
     <button id="saveRecurringBtn" class="primary">Add</button>
+    <button id="cancelRecurringBtn" class="secondary">Cancel</button>
   </div>
 
   <hr class="divider">
@@ -895,78 +896,171 @@ async function calculateLeft(uid) {
   }
 
   /* ════════════════════════════════════════
-     RECURRING LIST
-  ════════════════════════════════════════ */
-  async function loadRecurring(uid) {
-    const container = document.getElementById("recurringList");
-    container.innerHTML = "";
+   RECURRING STATE
+════════════════════════════════════════ */
+let editingRecurringId = null;
 
-    const snap = await getDocs(
-      query(collection(db, "users", uid, "recurring"), orderBy("nextDate"))
-    );
+/* ════════════════════════════════════════
+   LOAD RECURRING LIST
+════════════════════════════════════════ */
+async function loadRecurring(uid) {
+  const container = document.getElementById("recurringList");
+  container.innerHTML = "";
 
-    snap.forEach(docSnap => {
-      const d = docSnap.data();
-      const next = toDate(d.nextDate);
-      const isIncome = d.type === "income";
+  const snap = await getDocs(
+    query(collection(db, "users", uid, "recurring"), orderBy("nextDate"))
+  );
 
-      const row = document.createElement("div");
-      row.className = "slim-row";
-      row.innerHTML = `
-        <span title="${d.name}">${d.name}</span>
-        <span class="amount ${isIncome ? "" : "bill"}">
-          ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
-        </span>
-        <span>${d.frequency}</span>
-        <span>${next ? next.toLocaleDateString(undefined,{month:"numeric",day:"numeric"}) : "—"}</span>
-        <div class="row-actions">
-          <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
-        </div>
-      `;
-      container.appendChild(row);
-    });
-  }
+  snap.forEach(docSnap => {
+    const d = docSnap.data();
+    const next = toDate(d.nextDate);
+    const isIncome = d.type === "income";
 
-  window.deleteRecurring = async id => {
-    const user = auth.currentUser;
-    if (!user) return;
-    await deleteDoc(doc(db, "users", user.uid, "recurring", id));
-    loadRecurring(user.uid);
-    toast("Deleted.");
+    const row = document.createElement("div");
+    row.className = "slim-row";
+
+    row.innerHTML = `
+      <span title="${d.name}">${d.name}</span>
+
+      <span class="amount ${isIncome ? "" : "bill"}">
+        ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
+      </span>
+
+      <span>${d.frequency}</span>
+
+      <span>
+        ${next ? next.toLocaleDateString(undefined, { month: "numeric", day: "numeric" }) : "—"}
+      </span>
+
+      <div class="row-actions">
+        <button class="edit-btn" onclick="window.editRecurring('${docSnap.id}')">✎</button>
+        <button class="danger" onclick="window.deleteRecurring('${docSnap.id}')">✕</button>
+      </div>
+    `;
+
+    container.appendChild(row);
+  });
+}
+
+/* ════════════════════════════════════════
+   EDIT RECURRING
+════════════════════════════════════════ */
+window.editRecurring = async (id) => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const snap = await getDoc(doc(db, "users", user.uid, "recurring", id));
+  if (!snap.exists()) return;
+
+  const d = snap.data();
+  editingRecurringId = id;
+
+  document.getElementById("recurringType").value = d.type;
+  document.getElementById("recurringName").value = d.name;
+  document.getElementById("recurringDesc").value = d.description || "";
+  document.getElementById("recurringAmount").value = d.amount;
+  document.getElementById("recurringDate").value =
+    toDate(d.nextDate).toISOString().split("T")[0];
+  document.getElementById("recurringFrequency").value = d.frequency;
+
+  document.getElementById("saveRecurringBtn").textContent = "Update";
+
+  toast("Editing recurring...");
+};
+
+/* ════════════════════════════════════════
+   DELETE RECURRING
+════════════════════════════════════════ */
+window.deleteRecurring = async (id) => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await deleteDoc(doc(db, "users", user.uid, "recurring", id));
+
+  loadRecurring(user.uid);
+  calculateLeft(user.uid);
+
+  toast("Deleted.");
+};
+
+/* ════════════════════════════════════════
+   RESET FORM
+════════════════════════════════════════ */
+function resetRecurringForm() {
+  editingRecurringId = null;
+
+  document.getElementById("recurringType").value = "bill";
+  document.getElementById("recurringName").value = "";
+  document.getElementById("recurringDesc").value = "";
+  document.getElementById("recurringAmount").value = "";
+  document.getElementById("recurringDate").value = "";
+  document.getElementById("recurringFrequency").value = "monthly";
+
+  document.getElementById("saveRecurringBtn").textContent = "Add";
+}
+
+/* ════════════════════════════════════════
+   SAVE (CREATE + UPDATE)
+════════════════════════════════════════ */
+document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const type = document.getElementById("recurringType").value;
+  const name = document.getElementById("recurringName").value.trim();
+  const amount = Number(document.getElementById("recurringAmount").value);
+  const dateStr = document.getElementById("recurringDate").value;
+  const frequency = document.getElementById("recurringFrequency").value;
+  const desc = document.getElementById("recurringDesc").value.trim();
+
+  if (!name || !amount || !dateStr) return;
+
+  const data = {
+    type,
+    name,
+    description: desc,
+    amount,
+    frequency,
+    nextDate: Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
   };
 
-  /* ════════════════════════════════════════
-     SAVE RECURRING
-  ════════════════════════════════════════ */
-  document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
+  try {
+    if (editingRecurringId) {
+      await updateDoc(
+        doc(db, "users", user.uid, "recurring", editingRecurringId),
+        data
+      );
+      toast("Updated recurring!");
+    } else {
+      await addDoc(collection(db, "users", user.uid, "recurring"), {
+        ...data,
+        createdAt: serverTimestamp(),
+      });
+      toast("Added recurring!");
+    }
 
-    const type      = document.getElementById("recurringType").value;
-    const name      = document.getElementById("recurringName").value.trim();
-    const amount    = Number(document.getElementById("recurringAmount").value);
-    const dateStr   = document.getElementById("recurringDate").value;
-    const frequency = document.getElementById("recurringFrequency").value;
-
-    if (!name || !amount || !dateStr) return;
-
-    const recurringDesc = document.getElementById("recurringDesc").value.trim();
-    await addDoc(collection(db, "users", user.uid, "recurring"), {
-      type, name, description: recurringDesc, amount, frequency,
-      nextDate:  Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
-      createdAt: serverTimestamp()
-    });
-
-    document.getElementById("recurringName").value   = "";
-    document.getElementById("recurringDesc").value   = "";
-    document.getElementById("recurringAmount").value = "";
-    document.getElementById("recurringDate").value   = "";
-
+    resetRecurringForm();
     loadRecurring(user.uid);
     calculateLeft(user.uid);
-    toast("Saved!");
-  });
 
+  } catch (err) {
+    console.error(err);
+    toast("Error saving recurring");
+  }
+});
+
+/* ════════════════════════════════════════
+   CANCEL BUTTON
+════════════════════════════════════════ */
+window.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("cancelRecurringBtn");
+  if (!btn) return;
+
+  btn.addEventListener("click", () => {
+    resetRecurringForm();
+    toast("Edit cancelled");
+  });
+});
 
   /* ════════════════════════════════════════
      CATEGORIES CACHE
