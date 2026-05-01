@@ -839,55 +839,58 @@
      2. Sum all bill recurring items due before that date
      3. left = available - bills_before_paycheck
   ════════════════════════════════════════ */
-  async function calculateLeft(uid) {
-    const balances = await calculateBalances(uid);
-    const now = new Date();
+async function calculateLeft(uid) {
+  const balances = await calculateBalances(uid);
+  const now = new Date();
 
-    const snap = await getDocs(collection(db, "users", uid, "recurring"));
-    const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
+  // ✅ define ONCE
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
 
-    // Next income occurrence
-    const incomes = items
-      .filter(i => i.type === "income")
-      .map(i => toDate(i.nextDate))
-      .filter(d => d > now)
-      .sort((a, b) => a - b);
+  const snap = await getDocs(collection(db, "users", uid, "recurring"));
+  const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
 
-    if (incomes.length === 0) {
-      document.getElementById("leftToSpend").textContent = "—";
-      return;
-    }
-    const nextPaycheck = incomes[0];
+  // Next income occurrence
+  const incomes = items
+    .filter(i => i.type === "income")
+    .map(i => toDate(i.nextDate))
+    .filter(d => d > now)
+    .sort((a, b) => a - b);
 
-    // Bills due before that paycheck
-let billsDue = 0;
-let incomeDue = 0;
+  if (incomes.length === 0) {
+    document.getElementById("leftToSpend").textContent = "—";
+    return;
+  }
 
-for (const item of items) {
-  let d = toDate(item.nextDate);
-  if (!d) continue;
+  const nextPaycheck = incomes[0];
 
-  while (d && d <= nextPaycheck) {
-    if (d > now) {
-      if (item.type === "bill") {
-        billsDue += Number(item.amount);
-      } else if (item.type === "income") {
-        incomeDue += Number(item.amount);
+  let billsDue = 0;
+  let incomeDue = 0;
+
+  for (const item of items) {
+    let d = toDate(item.nextDate);
+    if (!d) continue;
+
+    while (d && d <= nextPaycheck) {
+      if (d > today) {   // ✅ now consistent
+        if (item.type === "bill") {
+          billsDue += Number(item.amount);
+        } else if (item.type === "income") {
+          incomeDue += Number(item.amount);
+        }
       }
+      d = advanceDate(d, item.frequency);
     }
-    d = advanceDate(d, item.frequency);
   }
+
+  const left = balances.available + incomeDue - billsDue;
+
+  const el = document.getElementById("leftToSpend");
+  el.textContent = fmt(left);
+
+  const opts = { month: "short", day: "numeric" };
+  el.title = `Next paycheck: ${nextPaycheck.toLocaleDateString(undefined, opts)} · Income: ${fmt(incomeDue)} · Bills: ${fmt(billsDue)}`;
 }
-
-const left = balances.available + incomeDue - billsDue;
-
-    const el = document.getElementById("leftToSpend");
-    el.textContent = fmt(left);
-
-    // Show paycheck date hint
-    const opts = { month: "short", day: "numeric" };
-    el.title = `Next paycheck: ${nextPaycheck.toLocaleDateString(undefined, opts)} · Bills due: ${fmt(billsDue)}`;
-  }
 
   function fmt(n) {
     return (n < 0 ? "-$" : "$") + Math.abs(n).toFixed(2);
