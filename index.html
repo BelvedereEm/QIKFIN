@@ -860,12 +860,21 @@
     const nextPaycheck = incomes[0];
 
     // Bills due before that paycheck
-    const billsDue = items
-      .filter(i => i.type === "bill")
-      .reduce((sum, i) => {
-        const nd = toDate(i.nextDate);
-        return nd && nd <= nextPaycheck ? sum + Number(i.amount) : sum;
-      }, 0);
+    let billsDue = 0;
+
+for (const item of items) {
+  if (item.type !== "bill") continue;
+
+  let d = toDate(item.nextDate);
+  if (!d) continue;
+
+  while (d && d <= nextPaycheck) {
+    if (d > now) {
+      billsDue += Number(item.amount);
+    }
+    d = advanceDate(d, item.frequency);
+  }
+}
 
     const left = balances.available - billsDue;
 
