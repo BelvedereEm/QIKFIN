@@ -1012,22 +1012,6 @@
     });
   }
 
-  document.getElementById("saveCatBtn").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const name  = document.getElementById("catName").value.trim();
-    const limit = Number(document.getElementById("catLimit").value);
-    if (!name) return;
-
-    // Check for duplicate
-    if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-      toast("Category already exists.");
-      return;
-    }
-
-    await addDoc(collection(db, "users", user.uid, "categories"), {
-      name, limit: limit || 0, createdAt: serverTimestamp()
-    });
     document.getElementById("catName").value  = "";
     document.getElementById("catLimit").value = "";
     loadCatList(user.uid);
@@ -1284,7 +1268,7 @@
           <input type="checkbox" title="Mark cleared" ${isCleared ? "checked" : ""}
             onchange="window.toggleCleared('${docSnap.id}', this.checked)">
         </div>
-        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
+        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.desc||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${isTransfer})">✎</button>
         <button class="danger" onclick="window.deleteTxn('${docSnap.id}')">✕</button>
       `;
 
@@ -1521,6 +1505,8 @@
 
       // Process due recurring items FIRST, then recalculate
       await processRecurring(user.uid);
+      await new Promise(r => setTimout(r, 200));
+      
       await loadCatCache(user.uid);
       await calculateLeft(user.uid);
       await loadBudgetDashboard(user.uid);
