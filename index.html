@@ -1275,8 +1275,6 @@
       const sign       = d.type === "income"   ? "+" :
                          d.type === "expense"  ? "-" : "⇄";
 
-const desc = d.description || d.note || d.category || "—";
-
 row.innerHTML = `
   <span>
     <span class="type-badge ${badgeClass}">
