@@ -860,23 +860,26 @@
     const nextPaycheck = incomes[0];
 
     // Bills due before that paycheck
-    let billsDue = 0;
+let billsDue = 0;
+let incomeDue = 0;
 
 for (const item of items) {
-  if (item.type !== "bill") continue;
-
   let d = toDate(item.nextDate);
   if (!d) continue;
 
   while (d && d <= nextPaycheck) {
     if (d > now) {
-      billsDue += Number(item.amount);
+      if (item.type === "bill") {
+        billsDue += Number(item.amount);
+      } else if (item.type === "income") {
+        incomeDue += Number(item.amount);
+      }
     }
     d = advanceDate(d, item.frequency);
   }
 }
 
-    const left = balances.available - billsDue;
+const left = balances.available + incomeDue - billsDue;
 
     const el = document.getElementById("leftToSpend");
     el.textContent = fmt(left);
