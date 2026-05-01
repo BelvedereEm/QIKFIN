@@ -808,6 +808,7 @@ async function calculateBalances(uid) {
   let income = 0;
   let expenses = 0;
   let savingsNet = 0;
+  let pendingExpenses = 0;
 
   snap.forEach(s => {
     const d = s.data();
@@ -815,7 +816,14 @@ async function calculateBalances(uid) {
 
     if (d.type === "income") income += amt;
 
-    if (d.type === "expense") expenses += amt;
+    if (d.type === "expense") {
+      expenses += amt;
+
+      // ❗ track uncleared separately
+      if (!d.cleared) {
+        pendingExpenses += amt;
+      }
+    }
 
     if (d.type === "transfer") {
       const from = d.transferFrom || d.from || "";
@@ -826,15 +834,19 @@ async function calculateBalances(uid) {
     }
   });
 
-  const checking  = income - expenses - savingsNet;
-  const savings   = savingsNet;
-  const available = checking;
+  // ✅ TRUE bank balance (everything)
+  const checking = income - expenses - savingsNet;
 
-  document.getElementById("currentBalance").textContent  = fmt(checking);
-  document.getElementById("savingsBalance").textContent  = fmt(savings);
+  // ✅ spendable right now
+  const available = checking - pendingExpenses;
+
+  const savings = savingsNet;
+
+  document.getElementById("currentBalance").textContent = fmt(checking);
   document.getElementById("availableBalance").textContent = fmt(available);
+  document.getElementById("savingsBalance").textContent = fmt(savings);
 
-  return { checking, savings, available };
+  return { checking, available, savings };
 }
 
   /* ════════════════════════════════════════
