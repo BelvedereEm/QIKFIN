@@ -1062,132 +1062,183 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-  /* ════════════════════════════════════════
-     CATEGORIES CACHE
-     Loaded once on login, refreshed on any
-     category add/delete. Shared by all
-     functions that need the user's categories.
-  ════════════════════════════════════════ */
-  let _catCache = []; // { id, name, limit }
+/* ════════════════════════════════════════
+   CATEGORIES CACHE
+   ════════════════════════════════════════ */
+let _catCache = []; // { id, name, limit }
 
-  async function loadCatCache(uid) {
-    const snap = await getDocs(
-      query(collection(db, "users", uid, "categories"), orderBy("name"))
-    );
-    _catCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    return _catCache;
-  }
+async function loadCatCache(uid) {
+  const snap = await getDocs(
+    query(collection(db, "users", uid, "categories"), orderBy("name"))
+  );
 
-  function populateCatSelects() {
-    const selects = ["categorySelect", "editCategorySelect"];
-    selects.forEach(sid => {
-      const el = document.getElementById(sid);
-      if (!el) return;
-      const cur = el.value;
-      el.innerHTML = '<option value="">— Select Category —</option>';
-      _catCache.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.name;
-        opt.textContent = c.name + (c.limit ? ` ($${Number(c.limit).toFixed(0)}/mo)` : "");
-        el.appendChild(opt);
-      });
-      el.value = cur; // restore selection if still valid
-    });
-  }
+  _catCache = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  return _catCache;
+}
 
 
-  /* ════════════════════════════════════════
-     CATEGORIES PAGE
-  ════════════════════════════════════════ */
-  async function loadCatList(uid) {
-    await loadCatCache(uid);
-    populateCatSelects();
+/* ════════════════════════════════════════
+   POPULATE CATEGORY DROPDOWNS
+   ════════════════════════════════════════ */
+function populateCatSelects() {
+  const selects = ["categorySelect", "editCategorySelect"];
 
-    const container = document.getElementById("catList");
-    container.innerHTML = "";
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const currentValue = el.value;
+
+    el.innerHTML = `<option value="">— Select Category —</option>`;
 
     _catCache.forEach(c => {
-      const row = document.createElement("div");
-      row.className = "cat-row";
-      row.innerHTML = `
-        <span title="${c.name}">${c.name}</span>
-        <span style="color:#38bdf8;">$${Number(c.limit||0).toFixed(0)}/mo</span>
-        <button class="edit-btn" onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g,"\'")}',${c.limit||0})">✎</button>
-        <button class="danger"   onclick="window.deleteCat('${c.id}')">✕</button>
-      `;
-      container.appendChild(row);
+      const opt = document.createElement("option");
+      opt.value = c.name;
+      opt.textContent =
+        c.name + (c.limit ? ` ($${Number(c.limit).toFixed(0)}/mo)` : "");
+
+      el.appendChild(opt);
     });
+
+    el.value = currentValue;
+  });
+}
+
+
+/* ════════════════════════════════════════
+   LOAD CATEGORY LIST UI
+   ════════════════════════════════════════ */
+async function loadCatList(uid) {
+  await loadCatCache(uid);
+  populateCatSelects();
+
+  const container = document.getElementById("catList");
+  container.innerHTML = "";
+
+  _catCache.forEach(c => {
+    const row = document.createElement("div");
+    row.className = "cat-row";
+
+    row.innerHTML = `
+      <span title="${c.name}">${c.name}</span>
+      <span style="color:#38bdf8;">
+        $${Number(c.limit || 0).toFixed(0)}/mo
+      </span>
+
+      <button class="edit-btn"
+        onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g, "\\'")}',${c.limit || 0})">
+        ✎
+      </button>
+
+      <button class="danger"
+        onclick="window.deleteCat('${c.id}')">
+        ✕
+      </button>
+    `;
+
+    container.appendChild(row);
+  });
+}
+
+
+/* ════════════════════════════════════════
+   ADD / UPDATE CATEGORY (SINGLE HANDLER)
+   ════════════════════════════════════════ */
+let editingCatId = null;
+
+document.getElementById("saveCatBtn").onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const name = document.getElementById("catName").value.trim();
+  const limit = Number(document.getElementById("catLimit").value);
+
+  if (!name) return;
+
+  // prevent duplicates (ignore current edit)
+  const exists = _catCache.find(c =>
+    c.name.toLowerCase() === name.toLowerCase() &&
+    c.id !== editingCatId
+  );
+
+  if (exists) {
+    toast("Category already exists.");
+    return;
   }
 
-  document.getElementById("saveCatBtn").addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const name  = document.getElementById("catName").value.trim();
-    const limit = Number(document.getElementById("catLimit").value);
-    if (!name) return;
-
-    // Check for duplicate
-    if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-      toast("Category already exists.");
-      return;
-    }
-
-    await addDoc(collection(db, "users", user.uid, "categories"), {
-      name, limit: limit || 0, createdAt: serverTimestamp()
-    });
-    document.getElementById("catName").value  = "";
-    document.getElementById("catLimit").value = "";
-    loadCatList(user.uid);
-    loadBudgetDashboard(user.uid);
-    toast("Category added!");
-  });
-
-  window.deleteCat = async id => {
-    const user = auth.currentUser;
-    if (!user) return;
-    await deleteDoc(doc(db, "users", user.uid, "categories", id));
-    loadCatList(user.uid);
-    loadBudgetDashboard(user.uid);
-    toast("Deleted.");
-  };
-
-  let editingCatId = null;
-  window.startEditCat = (id, name, limit) => {
-    editingCatId = id;
-    document.getElementById("catName").value  = name;
-    document.getElementById("catLimit").value = limit;
-    document.getElementById("saveCatBtn").textContent = "Update Category";
-    document.getElementById("catName").focus();
-  };
-
-  // Override saveCatBtn to handle edit mode
-  document.getElementById("saveCatBtn").addEventListener("click", async () => {}, { once: false });
-  document.getElementById("saveCatBtn").onclick = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    const name  = document.getElementById("catName").value.trim();
-    const limit = Number(document.getElementById("catLimit").value);
-    if (!name) return;
-
+  try {
+    // UPDATE
     if (editingCatId) {
-      await updateDoc(doc(db, "users", user.uid, "categories", editingCatId), { name, limit: limit || 0 });
+      await updateDoc(
+        doc(db, "users", user.uid, "categories", editingCatId),
+        { name, limit: limit || 0 }
+      );
+
       editingCatId = null;
       document.getElementById("saveCatBtn").textContent = "Add Category";
-    } else {
-      if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
-        toast("Category already exists."); return;
-      }
+
+    } 
+    // CREATE
+    else {
       await addDoc(collection(db, "users", user.uid, "categories"), {
-        name, limit: limit || 0, createdAt: serverTimestamp()
+        name,
+        limit: limit || 0,
+        createdAt: serverTimestamp()
       });
     }
-    document.getElementById("catName").value  = "";
+
+    // reset form
+    document.getElementById("catName").value = "";
     document.getElementById("catLimit").value = "";
+
+    // refresh UI + cache
+    await loadCatCache(user.uid);
     loadCatList(user.uid);
     loadBudgetDashboard(user.uid);
-    toast("Saved!");
-  };
 
+    toast("Saved!");
+
+  } catch (err) {
+    console.error(err);
+    toast("Error saving category");
+  }
+};
+
+
+/* ════════════════════════════════════════
+   EDIT CATEGORY
+   ════════════════════════════════════════ */
+window.startEditCat = (id, name, limit) => {
+  editingCatId = id;
+
+  document.getElementById("catName").value = name;
+  document.getElementById("catLimit").value = limit;
+
+  document.getElementById("saveCatBtn").textContent = "Update Category";
+
+  document.getElementById("catName").focus();
+};
+
+
+/* ════════════════════════════════════════
+   DELETE CATEGORY
+   ════════════════════════════════════════ */
+window.deleteCat = async (id) => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  await deleteDoc(doc(db, "users", user.uid, "categories", id));
+
+  await loadCatCache(user.uid);
+  loadCatList(user.uid);
+  loadBudgetDashboard(user.uid);
+
+  toast("Deleted.");
+};
 
   /* ════════════════════════════════════════
      BUDGET DASHBOARD
