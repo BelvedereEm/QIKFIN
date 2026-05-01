@@ -806,50 +806,40 @@ async function calculateBalances(uid) {
   const snap = await getDocs(collection(db, "users", uid, "transactions"));
 
   let income = 0;
-  let expenses = 0;
-  let savingsNet = 0;
+  let clearedExpenses = 0;
   let pendingExpenses = 0;
+  let savingsNet = 0;
 
   snap.forEach(s => {
     const d = s.data();
     const amt = Number(d.amount);
 
-    // INCOME
-    if (d.type === "income") {
-      income += amt;
-    }
+    if (d.type === "income") income += amt;
 
-    // EXPENSES
     if (d.type === "expense") {
-      expenses += amt;
-
-      // ONLY uncleared affect "available"
-      if (!d.cleared) {
+      if (d.cleared) {
+        clearedExpenses += amt;
+      } else {
         pendingExpenses += amt;
       }
     }
 
-    // TRANSFERS
     if (d.type === "transfer") {
-      const from = d.transferFrom || "";
-      const to   = d.transferTo || "";
+      const from = d.transferFrom || d.from || "";
+      const to   = d.transferTo || d.to || "";
 
       if (to === "savings") savingsNet += amt;
       if (from === "savings") savingsNet -= amt;
     }
   });
 
-  // ✅ TRUE ACCOUNT BALANCE (DO NOT subtract pending here)
-  const checking = income - expenses - savingsNet;
-
-  // ✅ Spendable money
+  const checking = income - clearedExpenses - savingsNet;
   const available = checking - pendingExpenses;
-
   const savings = savingsNet;
 
-  document.getElementById("currentBalance").textContent  = fmt(checking);
+  document.getElementById("currentBalance").textContent = fmt(checking);
   document.getElementById("availableBalance").textContent = fmt(available);
-  document.getElementById("savingsBalance").textContent   = fmt(savings);
+  document.getElementById("savingsBalance").textContent = fmt(savings);
 
   return { checking, available, savings };
 }
