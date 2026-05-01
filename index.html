@@ -802,37 +802,40 @@
      savings  = transfers_to_savings - transfers_from_savings
      available = checking (savings is already carved out)
   ════════════════════════════════════════ */
-  async function calculateBalances(uid) {
-    const snap = await getDocs(collection(db, "users", uid, "transactions"));
+async function calculateBalances(uid) {
+  const snap = await getDocs(collection(db, "users", uid, "transactions"));
 
-    let income = 0, expenses = 0, savingsNet = 0;
+  let income = 0;
+  let expenses = 0;
+  let savingsNet = 0;
 
-    snap.forEach(s => {
-      const d = s.data();
-      if (!d.cleared) return; // only count cleared transactions
+  snap.forEach(s => {
+    const d = s.data();
+    const amt = Number(d.amount);
 
-      const amt = Number(d.amount);
-      if (d.type === "income")  income   += amt;
-      if (d.type === "expense") expenses += amt;
-      if (d.type === "transfer") {
-        const from = d.transferFrom || d.from || "";
-        const to   = d.transferTo   || d.to   || "";
-        if (to   === "savings") savingsNet += amt;
-        if (from === "savings") savingsNet -= amt;
-      }
-    });
+    if (d.type === "income") income += amt;
 
-    // Checking = all money received minus money spent minus money moved to savings
-    const checking  = income - expenses - savingsNet;
-    const savings   = savingsNet;
-    const available = checking; // available IS checking; savings is separate
+    if (d.type === "expense") expenses += amt;
 
-    document.getElementById("currentBalance").textContent   = fmt(checking);
-    document.getElementById("savingsBalance").textContent   = fmt(savings);
-    document.getElementById("availableBalance").textContent = fmt(available);
+    if (d.type === "transfer") {
+      const from = d.transferFrom || d.from || "";
+      const to   = d.transferTo || d.to || "";
 
-    return { checking, savings, available };
-  }
+      if (to === "savings") savingsNet += amt;
+      if (from === "savings") savingsNet -= amt;
+    }
+  });
+
+  const checking  = income - expenses - savingsNet;
+  const savings   = savingsNet;
+  const available = checking;
+
+  document.getElementById("currentBalance").textContent  = fmt(checking);
+  document.getElementById("savingsBalance").textContent  = fmt(savings);
+  document.getElementById("availableBalance").textContent = fmt(available);
+
+  return { checking, savings, available };
+}
 
   /* ════════════════════════════════════════
      LEFT UNTIL NEXT PAYCHECK
