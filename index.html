@@ -814,41 +814,45 @@ async function calculateBalances(uid) {
     const d = s.data();
     const amt = Number(d.amount);
 
-    if (d.type === "income") income += amt;
+    // INCOME
+    if (d.type === "income") {
+      income += amt;
+    }
 
+    // EXPENSES
     if (d.type === "expense") {
       expenses += amt;
 
-      // ❗ track uncleared separately
+      // ONLY uncleared affect "available"
       if (!d.cleared) {
         pendingExpenses += amt;
       }
     }
 
+    // TRANSFERS
     if (d.type === "transfer") {
-      const from = d.transferFrom || d.from || "";
-      const to   = d.transferTo || d.to || "";
+      const from = d.transferFrom || "";
+      const to   = d.transferTo || "";
 
       if (to === "savings") savingsNet += amt;
       if (from === "savings") savingsNet -= amt;
     }
   });
 
-  // ✅ TRUE bank balance (everything)
+  // ✅ TRUE ACCOUNT BALANCE (DO NOT subtract pending here)
   const checking = income - expenses - savingsNet;
 
-  // ✅ spendable right now
+  // ✅ Spendable money
   const available = checking - pendingExpenses;
 
   const savings = savingsNet;
 
-  document.getElementById("currentBalance").textContent = fmt(checking);
+  document.getElementById("currentBalance").textContent  = fmt(checking);
   document.getElementById("availableBalance").textContent = fmt(available);
-  document.getElementById("savingsBalance").textContent = fmt(savings);
+  document.getElementById("savingsBalance").textContent   = fmt(savings);
 
   return { checking, available, savings };
 }
-
   /* ════════════════════════════════════════
      LEFT UNTIL NEXT PAYCHECK
      1. Find the next income recurring item (soonest nextDate in future)
@@ -897,7 +901,7 @@ async function calculateLeft(uid) {
     }
   }
 
-  const left = balances.checking - billsDue;
+  const left = balances.available - billsDue;
 
   const el = document.getElementById("leftToSpend");
   el.textContent = fmt(left);
