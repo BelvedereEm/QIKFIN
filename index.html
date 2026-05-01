@@ -871,13 +871,11 @@ async function calculateLeft(uid) {
     let d = toDate(item.nextDate);
     if (!d) continue;
 
-    while (d && d <= nextPaycheck) {
+    while (d && d < nextPaycheck) {
       if (d > today) {   // ✅ now consistent
         if (item.type === "bill") {
           billsDue += Number(item.amount);
-        } else if (item.type === "income") {
-          incomeDue += Number(item.amount);
-        }
+        } 
       }
       d = advanceDate(d, item.frequency);
     }
