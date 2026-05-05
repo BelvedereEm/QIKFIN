@@ -1378,7 +1378,7 @@ function resetRecurringForm() {
       const dateStr = txDate
         ? txDate.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" })
         : "—";
- 
+      
       const amtColor = d.type === "income"   ? "color:#4ade80" :
                        d.type === "expense"  ? "color:#f87171" : "color:#38bdf8";
       const sign     = d.type === "income"   ? "+" :
@@ -1390,6 +1390,11 @@ function resetRecurringForm() {
         <span title="${displayName}">${displayName}</span>
         <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
         <span style="font-size:11px;opacity:0.6;">${dateStr}</span>
+          <div class="cleared-wrap">
+    <input type="checkbox"
+      ${isCleared ? "checked" : ""}
+      onchange="window.toggleCleared('${docSnap.id}', this.checked)">
+  </div>
         <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.description||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${d.type === 'transfer'})">✎</button>
         <button class="danger"   onclick="window.deleteTxn('${docSnap.id}')">✕</button>
       `;
