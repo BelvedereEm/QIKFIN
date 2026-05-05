@@ -570,7 +570,7 @@
 <!-- ════ INCOME & BILLS ════ -->
 <div id="payPage" class="card page">
   <h2>Income &amp; Bills</h2>
-
+ 
   <div style="display:flex;flex-direction:column;gap:8px;">
     <select id="recurringType" class="qik-input">
       <option value="income">Income</option>
@@ -579,24 +579,35 @@
     <input id="recurringName"   class="qik-input" placeholder="Name (Paycheck, Rent…)">
     <input id="recurringDesc"   class="qik-input" placeholder="Description (optional)">
     <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
-    <input id="recurringDate"   class="qik-input" type="date">
+    <input id="recurringDate"   class="qik-input" type="date" placeholder="Next Date">
     <select id="recurringFrequency" class="qik-input">
+      <option value="once">Once</option>
       <option value="weekly">Weekly</option>
       <option value="biweekly">Biweekly</option>
       <option value="monthly">Monthly</option>
       <option value="yearly">Yearly</option>
     </select>
+    <!-- Shown only for weekly/biweekly — anchors to a fixed weekday so it never drifts -->
+    <select id="recurringDayOfWeek" class="qik-input" style="display:none;">
+      <option value="0">Every Sunday</option>
+      <option value="1">Every Monday</option>
+      <option value="2">Every Tuesday</option>
+      <option value="3">Every Wednesday</option>
+      <option value="4">Every Thursday</option>
+      <option value="5">Every Friday</option>
+      <option value="6">Every Saturday</option>
+    </select>
     <button id="saveRecurringBtn" class="primary">Add</button>
-    <button id="cancelRecurringBtn" class="secondary">Cancel</button>
   </div>
-
+ 
   <hr class="divider">
-
-<div class="list-header tx-header">
-  <span>Type</span><span>Desc</span><span>Amt</span><span></span><span></span><span></span>
-</div>
+ 
+  <!-- List header: Name | Amt | Next | Edit | Delete -->
+  <div class="list-header">
+    <span>Name</span><span>Amt</span><span>Next</span><span></span><span></span>
+  </div>
   <div id="recurringList"></div>
-
+ 
   <button class="back secondary">← Back</button>
 </div>
 
@@ -732,68 +743,83 @@
     document.getElementById(id).style.display = "flex";
   }
 
-  /* ════════════════════════════════════════
+ /* ════════════════════════════════════════
      FREQUENCY HELPERS
   ════════════════════════════════════════ */
-  function advanceDate(date, frequency) {
+  // dayOfWeek is optional (0=Sun..6=Sat); used to anchor weekly/biweekly so they never drift
+  function advanceDate(date, frequency, dayOfWeek) {
     const d = new Date(date);
     switch (frequency) {
-      case "weekly":    d.setDate(d.getDate() + 7);    break;
-      case "biweekly":  d.setDate(d.getDate() + 14);   break;
-      case "monthly":   d.setMonth(d.getMonth() + 1);  break;
-      case "yearly":    d.setFullYear(d.getFullYear() + 1); break;
+      case "once":     return null; // no next occurrence
+      case "weekly": {
+        d.setDate(d.getDate() + 7);
+        if (dayOfWeek != null) snapToWeekday(d, Number(dayOfWeek));
+        break;
+      }
+      case "biweekly": {
+        d.setDate(d.getDate() + 14);
+        if (dayOfWeek != null) snapToWeekday(d, Number(dayOfWeek));
+        break;
+      }
+      case "monthly":  d.setMonth(d.getMonth() + 1);        break;
+      case "yearly":   d.setFullYear(d.getFullYear() + 1);  break;
     }
     return d;
   }
-
+ 
+  // Snap date to the nearest future occurrence of the target weekday (within ±3 days)
+  function snapToWeekday(d, targetDay) {
+    const cur = d.getDay();
+    let diff = targetDay - cur;
+    // Keep it within -3..+3 so we stay within the same week
+    if (diff > 3)  diff -= 7;
+    if (diff < -3) diff += 7;
+    d.setDate(d.getDate() + diff);
+  }
+ 
   function toDate(val) {
     if (!val) return null;
     if (val?.toDate) return val.toDate();
     if (val instanceof Date) return val;
     return new Date(val);
   }
-
+ 
   /* ════════════════════════════════════════
      AUTO-POST RECURRING ITEMS
-     Fires on login. For each recurring item
-     whose nextDate <= today, post a transaction
-     and advance to the next occurrence.
   ════════════════════════════════════════ */
   async function processRecurring(uid) {
     const today = new Date();
-    today.setHours(23, 59, 59, 999); // end of today
-
+    today.setHours(23, 59, 59, 999);
+ 
     const snap = await getDocs(collection(db, "users", uid, "recurring"));
     const batch = [];
-
+ 
     for (const docSnap of snap.docs) {
       const d = docSnap.data();
       let nextDate = toDate(d.nextDate);
-
+ 
       while (nextDate && nextDate <= today) {
-        // Post transaction
         batch.push(addDoc(collection(db, "users", uid, "transactions"), {
           type:      d.type === "income" ? "income" : "expense",
           amount:    Number(d.amount),
           category:  d.name,
+          description: d.name,
           note:      `Auto: ${d.frequency}`,
           source:    "recurring",
           cleared:   false,
           date:      Timestamp.fromDate(nextDate)
         }));
-
-        // Advance date
-        nextDate = advanceDate(nextDate, d.frequency);
+ 
+        // For "once", stop after posting once
+        nextDate = advanceDate(nextDate, d.frequency, d.dayOfWeek);
       }
-
-      // Update nextDate in recurring doc
-      if (nextDate) {
-        batch.push(updateDoc(doc(db, "users", uid, "recurring", docSnap.id), {
-          nextDate: Timestamp.fromDate(nextDate)
-        }));
-      }
+ 
+      // Update nextDate (null for "once" after it fires)
+      batch.push(updateDoc(doc(db, "users", uid, "recurring", docSnap.id), {
+        nextDate: nextDate ? Timestamp.fromDate(nextDate) : null
+      }));
     }
-
+ 
     await Promise.all(batch);
   }
 
@@ -1011,267 +1037,176 @@ function resetRecurringForm() {
 }
 
 /* ════════════════════════════════════════
-   SAVE (CREATE + UPDATE)
-════════════════════════════════════════ */
-document.getElementById("saveRecurringBtn").addEventListener("click", async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const type = document.getElementById("recurringType").value;
-  const name = document.getElementById("recurringName").value.trim();
-  const amount = Number(document.getElementById("recurringAmount").value);
-  const dateStr = document.getElementById("recurringDate").value;
-  const frequency = document.getElementById("recurringFrequency").value;
-  const desc = document.getElementById("recurringDesc").value.trim();
-
-  if (!name || !amount || !dateStr) return;
-
-  const data = {
-    type,
-    name,
-    description: desc,
-    amount,
-    frequency,
-    nextDate: Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
-  };
-
-  try {
+     SAVE / UPDATE RECURRING
+  ════════════════════════════════════════ */
+  document.getElementById("saveRecurringBtn").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+ 
+    const type        = document.getElementById("recurringType").value;
+    const name        = document.getElementById("recurringName").value.trim();
+    const recurringDesc = document.getElementById("recurringDesc").value.trim();
+    const amount      = Number(document.getElementById("recurringAmount").value);
+    const dateStr     = document.getElementById("recurringDate").value;
+    const frequency   = document.getElementById("recurringFrequency").value;
+ 
+    if (!name || !amount || !dateStr) return;
+ 
+    const usesDayOfWeek = frequency === "weekly" || frequency === "biweekly";
+    const dayOfWeek = usesDayOfWeek
+      ? Number(document.getElementById("recurringDayOfWeek").value)
+      : null;
+ 
+    const data = {
+      type, name, description: recurringDesc, amount, frequency,
+      nextDate: Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
+      ...(dayOfWeek != null ? { dayOfWeek } : {})
+    };
+ 
     if (editingRecurringId) {
-      await updateDoc(
-        doc(db, "users", user.uid, "recurring", editingRecurringId),
-        data
-      );
-      toast("Updated recurring!");
+      await updateDoc(doc(db, "users", user.uid, "recurring", editingRecurringId), data);
+      editingRecurringId = null;
+      document.getElementById("saveRecurringBtn").textContent = "Add";
+      toast("Updated!");
     } else {
       await addDoc(collection(db, "users", user.uid, "recurring"), {
         ...data,
-        createdAt: serverTimestamp(),
-      });
-      toast("Added recurring!");
-    }
-
-    resetRecurringForm();
-    loadRecurring(user.uid);
-    calculateLeft(user.uid);
-
-  } catch (err) {
-    console.error(err);
-    toast("Error saving recurring");
-  }
-});
-
-/* ════════════════════════════════════════
-   CANCEL BUTTON
-════════════════════════════════════════ */
-window.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("cancelRecurringBtn");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    resetRecurringForm();
-    toast("Edit cancelled");
-  });
-});
-
-/* ════════════════════════════════════════
-   CATEGORIES CACHE
-   ════════════════════════════════════════ */
-let _catCache = []; // { id, name, limit }
-
-async function loadCatCache(uid) {
-  const snap = await getDocs(
-    query(collection(db, "users", uid, "categories"), orderBy("name"))
-  );
-
-  _catCache = snap.docs.map(d => ({
-    id: d.id,
-    ...d.data()
-  }));
-
-  return _catCache;
-}
-
-
-/* ════════════════════════════════════════
-   POPULATE CATEGORY DROPDOWNS
-   ════════════════════════════════════════ */
-function populateCatSelects() {
-  const selects = ["categorySelect", "editCategorySelect"];
-
-  selects.forEach(id => {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    const currentValue = el.value;
-
-    el.innerHTML = `<option value="">— Select Category —</option>`;
-
-    _catCache.forEach(c => {
-      const opt = document.createElement("option");
-      opt.value = c.name;
-      opt.textContent =
-        c.name + (c.limit ? ` ($${Number(c.limit).toFixed(0)}/mo)` : "");
-
-      el.appendChild(opt);
-    });
-
-    el.value = currentValue;
-  });
-}
-
-
-/* ════════════════════════════════════════
-   LOAD CATEGORY LIST UI
-   ════════════════════════════════════════ */
-async function loadCatList(uid) {
-  await loadCatCache(uid);
-  populateCatSelects();
-
-  const container = document.getElementById("catList");
-  container.innerHTML = "";
-
-  _catCache.forEach(c => {
-    const row = document.createElement("div");
-    row.className = "cat-row";
-
-    row.innerHTML = `
-      <span title="${c.name}">${c.name}</span>
-      <span style="color:#38bdf8;">
-        $${Number(c.limit || 0).toFixed(0)}/mo
-      </span>
-
-      <button class="edit-btn"
-        onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g, "\\'")}',${c.limit || 0})">
-        ✎
-      </button>
-
-      <button class="danger"
-        onclick="window.deleteCat('${c.id}')">
-        ✕
-      </button>
-    `;
-
-    container.appendChild(row);
-  });
-}
-
-
-/* ════════════════════════════════════════
-   ADD / UPDATE CATEGORY (SINGLE HANDLER)
-   ════════════════════════════════════════ */
-let editingCatId = null;
-
-document.getElementById("saveCatBtn").onclick = async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  const name = document.getElementById("catName").value.trim();
-  const limit = Number(document.getElementById("catLimit").value);
-
-  if (!name) return;
-
-  // prevent duplicates (ignore current edit)
-  const exists = _catCache.find(c =>
-    c.name.toLowerCase() === name.toLowerCase() &&
-    c.id !== editingCatId
-  );
-
-  if (exists) {
-    toast("Category already exists.");
-    return;
-  }
-
-  try {
-    // UPDATE
-    if (editingCatId) {
-      await updateDoc(
-        doc(db, "users", user.uid, "categories", editingCatId),
-        { name, limit: limit || 0 }
-      );
-
-      editingCatId = null;
-      document.getElementById("saveCatBtn").textContent = "Add Category";
-
-    } 
-    // CREATE
-    else {
-      await addDoc(collection(db, "users", user.uid, "categories"), {
-        name,
-        limit: limit || 0,
         createdAt: serverTimestamp()
       });
+      toast("Saved!");
     }
-
-    // reset form
-    document.getElementById("catName").value = "";
-    document.getElementById("catLimit").value = "";
-
-    // refresh UI + cache
-    await loadCatCache(user.uid);
+ 
+    document.getElementById("recurringName").value      = "";
+    document.getElementById("recurringDesc").value      = "";
+    document.getElementById("recurringAmount").value    = "";
+    document.getElementById("recurringDate").value      = "";
+    document.getElementById("recurringFrequency").value = "once";
+    updateDayOfWeekVisibility();
+ 
+    loadRecurring(user.uid);
+    calculateLeft(user.uid);
+  };
+ 
+  /* ════════════════════════════════════════
+     CATEGORIES CACHE
+  ════════════════════════════════════════ */
+  let _catCache = [];
+ 
+  async function loadCatCache(uid) {
+    const snap = await getDocs(
+      query(collection(db, "users", uid, "categories"), orderBy("name"))
+    );
+    _catCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    return _catCache;
+  }
+ 
+  function populateCatSelects() {
+    const selects = ["categorySelect", "editCategorySelect"];
+    selects.forEach(sid => {
+      const el = document.getElementById(sid);
+      if (!el) return;
+      const cur = el.value;
+      el.innerHTML = '<option value="">— Select Category —</option>';
+      _catCache.forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c.name;
+        opt.textContent = c.name + (c.limit ? ` ($${Number(c.limit).toFixed(0)}/mo)` : "");
+        el.appendChild(opt);
+      });
+      el.value = cur;
+    });
+  }
+ 
+  /* ════════════════════════════════════════
+     CATEGORIES PAGE
+  ════════════════════════════════════════ */
+  async function loadCatList(uid) {
+    await loadCatCache(uid);
+    populateCatSelects();
+ 
+    const container = document.getElementById("catList");
+    container.innerHTML = "";
+ 
+    _catCache.forEach(c => {
+      const row = document.createElement("div");
+      row.className = "cat-row";
+      row.innerHTML = `
+        <span title="${c.name}">${c.name}</span>
+        <span style="color:#38bdf8;">$${Number(c.limit||0).toFixed(0)}/mo</span>
+        <button class="edit-btn" onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g,"\\'")}',${c.limit||0})">✎</button>
+        <button class="danger"   onclick="window.deleteCat('${c.id}')">✕</button>
+      `;
+      container.appendChild(row);
+    });
+  }
+ 
+  let editingCatId = null;
+ 
+  window.startEditCat = (id, name, limit) => {
+    editingCatId = id;
+    document.getElementById("catName").value  = name;
+    document.getElementById("catLimit").value = limit;
+    document.getElementById("saveCatBtn").textContent = "Update Category";
+    document.getElementById("catName").focus();
+  };
+ 
+  window.deleteCat = async id => {
+    const user = auth.currentUser;
+    if (!user) return;
+    await deleteDoc(doc(db, "users", user.uid, "categories", id));
     loadCatList(user.uid);
     loadBudgetDashboard(user.uid);
-
+    toast("Deleted.");
+  };
+ 
+  /* Single onclick handler — no duplicate listeners */
+  document.getElementById("saveCatBtn").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const name  = document.getElementById("catName").value.trim();
+    const limit = Number(document.getElementById("catLimit").value);
+    if (!name) return;
+ 
+    if (editingCatId) {
+      // UPDATE existing
+      await updateDoc(doc(db, "users", user.uid, "categories", editingCatId), { name, limit: limit || 0 });
+      editingCatId = null;
+      document.getElementById("saveCatBtn").textContent = "Add Category";
+    } else {
+      // ADD new — guard against duplicates
+      if (_catCache.find(c => c.name.toLowerCase() === name.toLowerCase())) {
+        toast("Category already exists.");
+        return;
+      }
+      await addDoc(collection(db, "users", user.uid, "categories"), {
+        name, limit: limit || 0, createdAt: serverTimestamp()
+      });
+    }
+ 
+    document.getElementById("catName").value  = "";
+    document.getElementById("catLimit").value = "";
+    loadCatList(user.uid);
+    loadBudgetDashboard(user.uid);
     toast("Saved!");
-
-  } catch (err) {
-    console.error(err);
-    toast("Error saving category");
-  }
-};
-
-
-/* ════════════════════════════════════════
-   EDIT CATEGORY
-   ════════════════════════════════════════ */
-window.startEditCat = (id, name, limit) => {
-  editingCatId = id;
-
-  document.getElementById("catName").value = name;
-  document.getElementById("catLimit").value = limit;
-
-  document.getElementById("saveCatBtn").textContent = "Update Category";
-
-  document.getElementById("catName").focus();
-};
-
-
-/* ════════════════════════════════════════
-   DELETE CATEGORY
-   ════════════════════════════════════════ */
-window.deleteCat = async (id) => {
-  const user = auth.currentUser;
-  if (!user) return;
-
-  await deleteDoc(doc(db, "users", user.uid, "categories", id));
-
-  await loadCatCache(user.uid);
-  loadCatList(user.uid);
-  loadBudgetDashboard(user.uid);
-
-  toast("Deleted.");
-};
-
+  };
+ 
   /* ════════════════════════════════════════
      BUDGET DASHBOARD
-     Shows this month's spending per category
-     with progress bars and over/warn alerts.
   ════════════════════════════════════════ */
   async function loadBudgetDashboard(uid) {
     const container = document.getElementById("budgetDashboard");
     if (!container) return;
-
-    // Only show categories that have a budget limit
+ 
     const cats = _catCache.length ? _catCache : await loadCatCache(uid);
     const limitedCats = cats.filter(c => Number(c.limit) > 0);
     if (limitedCats.length === 0) { container.innerHTML = ""; return; }
-
-    // Get this month's cleared expense transactions
-    const now       = new Date();
+ 
+    const now        = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
+ 
     const snap = await getDocs(collection(db, "users", uid, "transactions"));
-    const spent = {}; // category -> total spent this month
-
+    const spent = {};
+ 
     snap.forEach(s => {
       const d = s.data();
       if (d.type !== "expense") return;
@@ -1281,18 +1216,17 @@ window.deleteCat = async (id) => {
       const cat = d.category || "Uncategorized";
       spent[cat] = (spent[cat] || 0) + Number(d.amount);
     });
-
+ 
     container.innerHTML = "";
-
     let alertsToShow = [];
-
+ 
     limitedCats.forEach(c => {
       const lim  = Number(c.limit);
       const used = spent[c.name] || 0;
       const pct  = Math.min((used / lim) * 100, 100);
       const isOver = used > lim;
       const isWarn = !isOver && pct >= 80;
-
+ 
       const item = document.createElement("div");
       item.className = "budget-item" + (isOver ? " over" : isWarn ? " warn" : "");
       item.innerHTML = `
@@ -1308,27 +1242,33 @@ window.deleteCat = async (id) => {
         </div>
       `;
       container.appendChild(item);
-
-      if (isOver)  alertsToShow.push({ name: c.name, msg: `⚠️ Over budget on ${c.name}!`, level: "over" });
-      else if (isWarn) alertsToShow.push({ name: c.name, msg: `${c.name}: ${Math.round(pct)}% of budget used`, level: "warn" });
+ 
+      if (isOver)      alertsToShow.push({ msg: `⚠️ Over budget on ${c.name}!` });
+      else if (isWarn) alertsToShow.push({ msg: `${c.name}: ${Math.round(pct)}% of budget used` });
     });
-
-    // Show alerts staggered
+ 
     alertsToShow.forEach((a, i) => {
       setTimeout(() => toast(a.msg), i * 1200);
     });
   }
-
+ 
   /* ════════════════════════════════════════
      TRANSFER TYPE TOGGLE
   ════════════════════════════════════════ */
+  // Show/hide day-of-week picker based on frequency
+  function updateDayOfWeekVisibility() {
+    const freq = document.getElementById("recurringFrequency").value;
+    const showDay = freq === "weekly" || freq === "biweekly";
+    document.getElementById("recurringDayOfWeek").style.display = showDay ? "block" : "none";
+  }
+  document.getElementById("recurringFrequency").addEventListener("change", updateDayOfWeekVisibility);
+ 
   document.getElementById("type").addEventListener("change", function () {
     const isTransfer = this.value === "transfer";
     document.getElementById("normalFields").style.display   = isTransfer ? "none"  : "flex";
     document.getElementById("transferFields").style.display = isTransfer ? "flex"  : "none";
   });
-
-  // Keep transferFrom / transferTo from being the same
+ 
   ["transferFrom","transferTo"].forEach(id => {
     document.getElementById(id).addEventListener("change", () => {
       const from = document.getElementById("transferFrom").value;
@@ -1338,36 +1278,36 @@ window.deleteCat = async (id) => {
       }
     });
   });
-
+ 
   /* ════════════════════════════════════════
      ADD TRANSACTION
   ════════════════════════════════════════ */
   document.getElementById("addTxnBtn").onclick = async () => {
     const user = auth.currentUser;
     if (!user) return;
-
+ 
     const type = document.getElementById("type").value;
-
+ 
     if (type === "transfer") {
       const from   = document.getElementById("transferFrom").value;
       const to     = document.getElementById("transferTo").value;
       const amount = Number(document.getElementById("transferAmount").value);
       const note   = document.getElementById("transferNote").value;
-
+ 
       if (!amount || amount <= 0 || from === to) return;
-
+ 
       await addDoc(collection(db, "users", user.uid, "transactions"), {
         type: "transfer",
         amount,
         transferFrom: from,
         transferTo:   to,
         category: `${from} → ${to}`,
-        description: "",
+        description: `Transfer: ${from} → ${to}`,
         note,
         cleared: false,
         date: serverTimestamp()
       });
-
+ 
       document.getElementById("transferAmount").value = "";
       document.getElementById("transferNote").value   = "";
     } else {
@@ -1375,123 +1315,98 @@ window.deleteCat = async (id) => {
       const category    = document.getElementById("categorySelect").value;
       const description = document.getElementById("description").value.trim();
       const note        = document.getElementById("note").value.trim();
-
+ 
       if (!amount || amount <= 0) return;
-
+ 
       await addDoc(collection(db, "users", user.uid, "transactions"), {
         type, amount, category, description, note,
         cleared: false,
         date: serverTimestamp()
       });
-
-      document.getElementById("amount").value      = "";
-      document.getElementById("categorySelect").value = "";
-      document.getElementById("description").value = "";
-      document.getElementById("note").value        = "";
-
-      // Budget alert check
+ 
+      document.getElementById("amount").value         = "";
+      document.getElementById("categorySelect").value  = "";
+      document.getElementById("description").value    = "";
+      document.getElementById("note").value           = "";
+ 
       if (type === "expense" && category) {
         const cat = _catCache.find(c => c.name === category);
         if (cat && Number(cat.limit) > 0) {
-          // Tally this month
-          const now = new Date();
+          const now        = new Date();
           const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-          const snap = await getDocs(collection(db, "users", user.uid, "transactions"));
-          let monthTotal = 0;
+          const snap       = await getDocs(collection(db, "users", user.uid, "transactions"));
+          let monthTotal   = 0;
           snap.forEach(s => {
             const d = s.data();
             if (d.type !== "expense" || d.category !== category) return;
             const txDate = toDate(d.date);
             if (txDate && txDate >= monthStart) monthTotal += Number(d.amount);
           });
-          monthTotal += amount; // include this new one optimistically
+          monthTotal += amount;
           const pct = (monthTotal / Number(cat.limit)) * 100;
           if (pct >= 100) toast(`⚠️ Over budget on ${category}!`);
           else if (pct >= 80) toast(`${category}: ${Math.round(pct)}% of budget used`);
         }
       }
     }
-
+ 
     await calculateLeft(user.uid);
     await loadBudgetDashboard(user.uid);
     toast("Transaction saved!");
   };
-
+ 
   /* ════════════════════════════════════════
      REGISTER
+     Columns: Name | Amt | Date | Edit | Delete
   ════════════════════════════════════════ */
   let editingId = null;
-
+ 
   async function loadRegister(uid) {
     const container = document.getElementById("registerList");
     container.innerHTML = "";
-
+ 
     const snap = await getDocs(
       query(collection(db, "users", uid, "transactions"), orderBy("date", "desc"))
     );
-
+ 
     snap.forEach(docSnap => {
       const d = docSnap.data();
-      const isTransfer = d.type === "transfer";
-      const isCleared  = !!d.cleared;
-
+      const isCleared = !!d.cleared;
+ 
+      // Display name: prefer description, fallback to category
+      const displayName = d.description || d.category || "—";
+      const txDate = toDate(d.date);
+      const dateStr = txDate
+        ? txDate.toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "2-digit" })
+        : "—";
+ 
+      const amtColor = d.type === "income"   ? "color:#4ade80" :
+                       d.type === "expense"  ? "color:#f87171" : "color:#38bdf8";
+      const sign     = d.type === "income"   ? "+" :
+                       d.type === "expense"  ? "-" : "⇄";
+ 
       const row = document.createElement("div");
       row.className = "tx-row" + (isCleared ? "" : " pending");
-
-      const badgeClass = `badge-${d.type}`;
-      const amtColor   = d.type === "income"   ? "color:#4ade80" :
-                         d.type === "expense"  ? "color:#f87171" : "color:#38bdf8";
-      const sign       = d.type === "income"   ? "+" :
-                         d.type === "expense"  ? "-" : "⇄";
-
-const desc = d.description || d.note || d.category || "—";
-
-row.innerHTML = `
-  <span>
-    <span class="type-badge ${badgeClass}">
-      ${d.type[0].toUpperCase()}
-    </span>
-  </span>
-
-  <span title="${desc}">${desc}</span>
-
-  <span style="${amtColor}">
-    ${sign}$${Number(d.amount).toFixed(2)}
-  </span>
-
-  <div class="cleared-wrap">
-    <input type="checkbox"
-      ${isCleared ? "checked" : ""}
-      onchange="window.toggleCleared('${docSnap.id}', this.checked)">
-  </div>
-
-  <button class="edit-btn"
-    onclick="window.startEdit(
-      '${docSnap.id}',
-      ${d.amount},
-      '${(d.category||"").replace(/'/g,"\\'")}',
-      '${(d.description||"").replace(/'/g,"\\'")}',
-      '${(d.note||"").replace(/'/g,"\\'")}',
-      ${isTransfer}
-    )">✎</button>
-
-  <button class="danger"
-    onclick="window.deleteTxn('${docSnap.id}')">✕</button>
-`;
-
+      row.innerHTML = `
+        <span title="${displayName}">${displayName}</span>
+        <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
+        <span style="font-size:11px;opacity:0.6;">${dateStr}</span>
+        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.description||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${d.type === 'transfer'})">✎</button>
+        <button class="danger"   onclick="window.deleteTxn('${docSnap.id}')">✕</button>
+      `;
+ 
       container.appendChild(row);
     });
   }
-
+ 
   window.toggleCleared = async (id, cleared) => {
     const user = auth.currentUser;
     if (!user) return;
     await updateDoc(doc(db, "users", user.uid, "transactions", id), { cleared });
-    // Refresh balances immediately; re-render register to update pending style
     await calculateLeft(user.uid);
     loadRegister(user.uid);
   };
-
+ 
   window.deleteTxn = async id => {
     const user = auth.currentUser;
     if (!user) return;
@@ -1500,33 +1415,33 @@ row.innerHTML = `
     calculateLeft(user.uid);
     toast("Deleted.");
   };
-
-  window.startEdit = (id, amount, category, desc, note, isTransfer) => {
+ 
+  window.startEdit = (id, amount, category, description, note, isTransfer) => {
     editingId = id;
     document.getElementById("editAmount").value          = amount;
     document.getElementById("editCategorySelect").value  = category;
-    document.getElementById("editDescription").value     = desc;
+    document.getElementById("editDescription").value     = description;
     document.getElementById("editNote").value            = note;
     document.getElementById("editCategorySelect").disabled = isTransfer;
     document.getElementById("editOverlay").classList.add("visible");
     document.getElementById("editOverlay").scrollIntoView({ behavior: "smooth" });
   };
-
+ 
   document.getElementById("saveEditBtn").onclick = async () => {
     const user = auth.currentUser;
     if (!user || !editingId) return;
-
+ 
     const amount      = Number(document.getElementById("editAmount").value);
     const category    = document.getElementById("editCategorySelect").value;
     const description = document.getElementById("editDescription").value.trim();
     const note        = document.getElementById("editNote").value.trim();
-
+ 
     if (!amount || amount <= 0) return;
-
+ 
     await updateDoc(doc(db, "users", user.uid, "transactions", editingId), {
       amount, category, description, note
     });
-
+ 
     editingId = null;
     document.getElementById("editOverlay").classList.remove("visible");
     loadRegister(user.uid);
@@ -1534,12 +1449,12 @@ row.innerHTML = `
     loadBudgetDashboard(user.uid);
     toast("Updated!");
   };
-
+ 
   document.getElementById("cancelEditBtn").addEventListener("click", () => {
     editingId = null;
     document.getElementById("editOverlay").classList.remove("visible");
   });
-
+ 
   /* ════════════════════════════════════════
      AUTH
   ════════════════════════════════════════ */
@@ -1550,7 +1465,7 @@ row.innerHTML = `
       document.getElementById("password").value
     ).catch(err => { document.getElementById("msg").textContent = err.message; });
   });
-
+ 
   document.getElementById("signupBtn").addEventListener("click", async () => {
     const email    = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -1566,86 +1481,78 @@ row.innerHTML = `
       msg.textContent = err.message;
     }
   });
-
+ 
   document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-
+ 
   document.getElementById("showPassword").addEventListener("change", function () {
     document.getElementById("password").type = this.checked ? "text" : "password";
   });
-
+ 
   /* ════════════════════════════════════════
      PROJECTIONS ENGINE
-     Starting from today's cleared balances,
-     simulate all recurring events up to the
-     chosen date and show a running breakdown.
   ════════════════════════════════════════ */
   async function runProjection(uid) {
     const dateVal = document.getElementById("projDate").value;
     if (!dateVal) return;
-
+ 
     const targetDate = new Date(dateVal + "T23:59:59");
     const today      = new Date();
     today.setHours(0, 0, 0, 0);
-
+ 
     if (targetDate <= today) {
       toast("Pick a future date.");
       return;
     }
-
-    // Current cleared balances as starting point
+ 
     const balances = await calculateBalances(uid);
     let running = balances.available;
-
-    // Load recurring items
+ 
     const snap  = await getDocs(collection(db, "users", uid, "recurring"));
     const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
-
-    // Build list of all occurrences between now and targetDate
+ 
     const events = [];
-
+ 
     for (const item of items) {
       let d = toDate(item.nextDate);
       if (!d) continue;
-
-      while (d <= targetDate) {
+ 
+      while (d && d <= targetDate) {
         if (d > today) {
           events.push({
             name:   item.name,
             amount: Number(item.amount),
-            type:   item.type,   // "income" | "bill"
+            type:   item.type,
             date:   new Date(d)
           });
         }
-        d = advanceDate(d, item.frequency);
+        d = advanceDate(d, item.frequency, item.dayOfWeek);
+        // "once" returns null — stop the loop
+        if (!d) break;
       }
     }
-
-    // Sort chronologically
+ 
     events.sort((a, b) => a.date - b.date);
-
-    // Tally
+ 
     let totalIncome = 0, totalBills = 0;
     for (const e of events) {
       if (e.type === "income") { running += e.amount; totalIncome += e.amount; }
       else                     { running -= e.amount; totalBills  += e.amount; }
     }
-
-    // Render result card
+ 
     const amtEl = document.getElementById("projFinalAmt");
     amtEl.textContent = fmt(running);
     amtEl.className   = "proj-amount " + (running >= 0 ? "positive" : "negative");
-
+ 
     const opts = { month: "long", day: "numeric", year: "numeric" };
     document.getElementById("projFinalSub").textContent =
       `as of ${targetDate.toLocaleDateString(undefined, opts)}`;
-
+ 
     document.getElementById("projTotalIncome").textContent = fmt(totalIncome);
     document.getElementById("projTotalBills").textContent  = fmt(totalBills);
-
-    // Render breakdown
+ 
     const breakdown = document.getElementById("projBreakdown");
     breakdown.innerHTML = "";
-
+ 
     if (events.length === 0) {
       breakdown.innerHTML = `<p style="font-size:12px;opacity:0.4;text-align:center;">No scheduled events in this range.</p>`;
     } else {
@@ -1664,15 +1571,15 @@ row.innerHTML = `
         breakdown.appendChild(row);
       });
     }
-
+ 
     document.getElementById("projOutput").style.display = "flex";
   }
-
+ 
   document.getElementById("runProjectionBtn").addEventListener("click", () => {
     const uid = auth.currentUser?.uid;
     if (uid) runProjection(uid);
   });
-
+ 
   /* ── NAV ── */
   document.getElementById("goCategories").addEventListener("click", () => {
     show("categoriesPage");
@@ -1699,18 +1606,16 @@ row.innerHTML = `
   document.querySelectorAll(".back").forEach(btn =>
     btn.addEventListener("click", () => show("dashboard"))
   );
-
+ 
   /* ── AUTH STATE ── */
   onAuthStateChanged(auth, async user => {
     if (user) {
       document.getElementById("userInfo").textContent = user.email;
       show("dashboard");
-
-      // Reset display
+ 
       ["currentBalance","savingsBalance","availableBalance","leftToSpend"]
         .forEach(id => document.getElementById(id).textContent = "…");
-
-      // Process due recurring items FIRST, then recalculate
+ 
       await processRecurring(user.uid);
       await loadCatCache(user.uid);
       await calculateLeft(user.uid);
