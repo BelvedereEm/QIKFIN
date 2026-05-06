@@ -1,1 +1,25 @@
-
+{
+  "name": "QIKFIN",
+  "short_name": "QIKFIN",
+  "description": "Personal finance tracker",
+  "start_url": "/QIKFIN/",
+  "scope": "/QIKFIN/",
+  "display": "standalone",
+  "background_color": "#0a0f1e",
+  "theme_color": "#38bdf8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "QikFin-Logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
