@@ -1134,8 +1134,8 @@ function resetRecurringForm() {
       row.innerHTML = `
         <span title="${c.name}">${c.name}</span>
         <span style="color:#38bdf8;">$${Number(c.limit||0).toFixed(0)}/mo</span>
-        <button class="edit-btn" onclick="window.startEditCat('${c.id}','${c.name.replace(/'/g,"\\'")}',${c.limit||0})">✎</button>
-        <button class="danger"   onclick="window.deleteCat('${c.id}')">✕</button>
+        <button class="edit-btn" onclick='window.startEditCat(${JSON.stringify(c.id)},${JSON.stringify(c.name)},${c.limit||0})'>✎</button>
+        <button class="danger"   onclick='window.deleteCat(${JSON.stringify(c.id)})'>✕</button>
       `;
       container.appendChild(row);
     });
