@@ -5,10 +5,6 @@
    - Fires push notifications for today & tomorrow
 ═══════════════════════════════════════════ */
 
-importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js");
-
 const CACHE_NAME = "qikfin-v1";
 const TIMEZONE   = "America/New_York";
 
@@ -22,8 +18,6 @@ const firebaseConfig = {
   appId:             "1:867906265805:web:fef99742609ce5151e3f84"
 };
 
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
 
 /* ═══════════════════════════════════════════
    INSTALL & ACTIVATE
@@ -49,7 +43,7 @@ self.addEventListener("notificationclick", e => {
 ═══════════════════════════════════════════ */
 self.addEventListener("message", e => {
   if (e.data?.type === "CHECK_NOTIFICATIONS") {
-    checkAndNotify(e.data.uid);
+    checkAndNotify(e.data.uid, e.data.items);
   }
 });
 
@@ -121,68 +115,56 @@ function markNotifiedToday(uid) {
 /* ═══════════════════════════════════════════
    MAIN CHECK FUNCTION
 ═══════════════════════════════════════════ */
-async function checkAndNotify(uid) {
-  if (!uid) return;
+async function checkAndNotify(uid, items) {
+  if (!uid || !items) return;
   if (alreadyNotifiedToday(uid)) return;
 
   const { today, tomorrow } = getEasternDates();
+  const todayItems    = [];
+  const tomorrowItems = [];
 
-  try {
-    const snap = await db.collection("users").doc(uid).collection("recurring").get();
-    const todayItems    = [];
-    const tomorrowItems = [];
+  items.forEach(item => {
+    let d = item.nextDate ? new Date(item.nextDate) : null;
+    if (!d) return;
 
-    snap.forEach(docSnap => {
-      const item = docSnap.data();
-      let d = toDate(item.nextDate);
-      if (!d) return;
+    const limit = new Date();
+    limit.setDate(limit.getDate() + 2);
 
-      // Walk occurrences to find any hitting today or tomorrow
-      const limit = new Date();
-      limit.setDate(limit.getDate() + 2); // only look 2 days ahead
+    while (d && d <= limit) {
+      const ymd    = dateToYMD(d);
+      const label  = item.type === "income" ? "💰" : "💸";
+      const sign   = item.type === "income" ? "+" : "-";
+      const amount = `${sign}$${Number(item.amount).toFixed(2)}`;
+      const entry  = { name: item.name, amount, label };
 
-      while (d && d <= limit) {
-        const ymd = dateToYMD(d);
-        const label  = item.type === "income" ? "💰" : "💸";
-        const sign   = item.type === "income" ? "+" : "-";
-        const amount = `${sign}$${Number(item.amount).toFixed(2)}`;
-        const entry  = { name: item.name, amount, label, type: item.type };
+      if (ymd === today)    todayItems.push(entry);
+      if (ymd === tomorrow) tomorrowItems.push(entry);
 
-        if (ymd === today)    todayItems.push(entry);
-        if (ymd === tomorrow) tomorrowItems.push(entry);
+      d = advanceDate(d, item.frequency);
+    }
+  });
 
-        d = advanceDate(d, item.frequency);
-      }
+  if (tomorrowItems.length > 0) {
+    const lines = tomorrowItems.map(i => `${i.label} ${i.name} ${i.amount}`).join("\n");
+    await self.registration.showNotification("QIKFIN — Due Tomorrow", {
+      body: lines,
+      icon: "/QIKFIN/QikFin-Logo.png",
+      badge: "/QIKFIN/apple-touch-icon.png",
+      tag: "qikfin-tomorrow",
+      renotify: true
     });
-
-    // Fire notifications
-    if (tomorrowItems.length > 0) {
-      const lines = tomorrowItems.map(i => `${i.label} ${i.name} ${i.amount}`).join("\n");
-      await self.registration.showNotification("QIKFIN — Due Tomorrow", {
-        body: lines,
-        icon: "/QIKFIN/QikFin-Logo.png",
-        badge: "/QIKFIN/apple-touch-icon.png",
-        tag: "qikfin-tomorrow",
-        renotify: true,
-        data: { url: "/QIKFIN/" }
-      });
-    }
-
-    if (todayItems.length > 0) {
-      const lines = todayItems.map(i => `${i.label} ${i.name} ${i.amount}`).join("\n");
-      await self.registration.showNotification("QIKFIN — Due Today", {
-        body: lines,
-        icon: "/QIKFIN/QikFin-Logo.png",
-        badge: "/QIKFIN/apple-touch-icon.png",
-        tag: "qikfin-today",
-        renotify: true,
-        data: { url: "/QIKFIN/" }
-      });
-    }
-
-    markNotifiedToday(uid);
-
-  } catch (err) {
-    console.error("[QikFin SW] Notification check failed:", err);
   }
+
+  if (todayItems.length > 0) {
+    const lines = todayItems.map(i => `${i.label} ${i.name} ${i.amount}`).join("\n");
+    await self.registration.showNotification("QIKFIN — Due Today", {
+      body: lines,
+      icon: "/QIKFIN/QikFin-Logo.png",
+      badge: "/QIKFIN/apple-touch-icon.png",
+      tag: "qikfin-today",
+      renotify: true
+    });
+  }
+
+  markNotifiedToday(uid);
 }
