@@ -1387,21 +1387,59 @@ function resetRecurringForm() {
                        d.type === "expense"  ? "-" : "⇄";
  
       const row = document.createElement("div");
-      row.className = "tx-row" + (isCleared ? "" : " pending");
-      row.innerHTML = `
-        <span title="${displayName}">${displayName}</span>
-        <span style="${amtColor}">${sign}$${Number(d.amount).toFixed(2)}</span>
-        <span style="font-size:11px;opacity:0.6;">${dateStr}</span>
-          <div class="cleared-wrap">
-    <input type="checkbox"
-      ${isCleared ? "checked" : ""}
-      onchange="window.toggleCleared('${docSnap.id}', this.checked)">
-  </div>
-        <button class="edit-btn" onclick="window.startEdit('${docSnap.id}', ${d.amount}, '${(d.category||"").replace(/'/g,"\\'")}', '${(d.description||"").replace(/'/g,"\\'")}', '${(d.note||"").replace(/'/g,"\\'")}', ${d.type === 'transfer'})">✎</button>
-        <button class="danger"   onclick="window.deleteTxn('${docSnap.id}')">✕</button>
-      `;
- 
-      container.appendChild(row);
+row.className = "tx-row" + (isCleared ? "" : " pending");
+
+// Name span
+const nameSpan = document.createElement("span");
+nameSpan.title = displayName;
+nameSpan.textContent = displayName;
+
+// Amount span
+const amtSpan = document.createElement("span");
+amtSpan.style.cssText = amtColor;
+amtSpan.textContent = `${sign}$${Number(d.amount).toFixed(2)}`;
+
+// Date span
+const dateSpan = document.createElement("span");
+dateSpan.style.cssText = "font-size:11px;opacity:0.6;";
+dateSpan.textContent = dateStr;
+
+// Cleared checkbox wrapper
+const clearedWrap = document.createElement("div");
+clearedWrap.className = "cleared-wrap";
+const checkbox = document.createElement("input");
+checkbox.type = "checkbox";
+checkbox.checked = isCleared;
+checkbox.onchange = () => window.toggleCleared(docSnap.id, checkbox.checked);
+clearedWrap.appendChild(checkbox);
+
+// Edit button
+const editBtn = document.createElement("button");
+editBtn.className = "edit-btn";
+editBtn.textContent = "✎";
+editBtn.onclick = () => window.startEdit(
+  docSnap.id,
+  d.amount,
+  d.category    || "",
+  d.description || "",
+  d.note        || "",
+  d.type === "transfer"
+);
+
+// Delete button
+const deleteBtn = document.createElement("button");
+deleteBtn.className = "danger";
+deleteBtn.textContent = "✕";
+deleteBtn.onclick = () => window.deleteTxn(docSnap.id);
+
+row.appendChild(nameSpan);
+row.appendChild(amtSpan);
+row.appendChild(dateSpan);
+row.appendChild(clearedWrap);
+row.appendChild(editBtn);
+row.appendChild(deleteBtn);
+
+container.appendChild(row);
     });
   }
  
