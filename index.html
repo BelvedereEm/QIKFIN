@@ -1652,9 +1652,22 @@ async function requestNotificationPermission(uid) {
   }
 }
 
-function triggerNotificationCheck(uid) {
+async function triggerNotificationCheck(uid) {
+  const snap = await getDocs(collection(db, "users", uid, "recurring"));
+  const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
+
+  // Convert Firestore Timestamps to plain JS dates
+  const plainItems = items.map(item => ({
+    ...item,
+    nextDate: toDate(item.nextDate)?.toISOString() || null
+  }));
+
   navigator.serviceWorker.ready.then(reg => {
-    reg.active?.postMessage({ type: "CHECK_NOTIFICATIONS", uid });
+    reg.active?.postMessage({
+      type: "CHECK_NOTIFICATIONS",
+      uid,
+      items: plainItems
+    });
   });
 }
 </script>
