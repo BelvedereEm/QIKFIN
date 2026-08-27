@@ -467,6 +467,87 @@
     #catList { display: flex; flex-direction: column; gap: 4px; }
 
     .page { display: none; }
+
+    /* ── DESKTOP LAYOUT ── */
+@media (min-width: 768px) {
+
+  body {
+    padding: 40px;
+    align-items: flex-start;
+  }
+
+  /* Widen all cards on desktop */
+  .card {
+    max-width: 720px;
+    padding: 32px;
+  }
+
+  /* Dashboard: stack balance boxes in a 3-column row */
+  #dashboard .balanceBox:first-of-type {
+    grid-column: 1 / -1;
+  }
+
+  /* Register & recurring rows get more breathing room */
+  .tx-row {
+    grid-template-columns: 1fr 1.2fr 0.8fr 1rem auto auto;
+    font-size: 13px;
+    padding: 9px 14px;
+  }
+
+  .list-header.tx-header {
+    grid-template-columns: 1fr 1.2fr 0.8fr 1rem auto auto;
+    font-size: 11px;
+    padding: 4px 14px;
+  }
+
+  .slim-row {
+    font-size: 13px;
+    padding: 9px 14px;
+  }
+
+  /* Budget bars side by side */
+  .budget-bar-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Projection output grid */
+  #projOutput {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* Proj result spans full width */
+  #projOutput .proj-result,
+  #projOutput .proj-section-label,
+  #projOutput #projBreakdown {
+    grid-column: 1 / -1;
+  }
+
+  /* Buttons side by side on forms */
+  #dashboard button {
+    width: auto;
+    flex: 1;
+  }
+
+  #dashboard {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* Logo and header span full width */
+  #dashboard img,
+  #dashboard #userInfo,
+  #dashboard .balanceBox,
+  #dashboard .budget-bar-wrap,
+  #dashboard #budgetDashboard {
+    grid-column: 1 / -1;
+  }
+}
+    
   </style>
 </head>
 <body>
