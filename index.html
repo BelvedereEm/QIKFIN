@@ -683,6 +683,28 @@
   </div>
  
   <hr class="divider">
+
+  
+  <!-- ── Transfer Between Accounts ── -->
+  <p class="section-label" style="margin:0;">Transfer Between Accounts</p>
+  <div style="display:flex;flex-direction:column;gap:8px;">
+    <div class="transfer-row">
+      <select id="payTransferFrom" class="qik-input">
+        <option value="checking">Checking</option>
+        <option value="savings">Savings</option>
+      </select>
+      <span class="transfer-arrow">→</span>
+      <select id="payTransferTo" class="qik-input">
+        <option value="savings">Savings</option>
+        <option value="checking">Checking</option>
+      </select>
+    </div>
+    <input id="payTransferAmount" type="number" class="qik-input" placeholder="Amount">
+    <input id="payTransferNote"   class="qik-input" placeholder="Note (optional)">
+    <button id="payTransferBtn" class="primary">Transfer</button>
+  </div>
+
+  <hr class="divider">
  
   <!-- List header: Name | Amt | Next | Edit | Delete -->
   <div class="list-header">
@@ -1360,7 +1382,48 @@ function resetRecurringForm() {
       }
     });
   });
- 
+
+  
+  // Same from/to guard for the Income & Bills page's quick-transfer widget
+  ["payTransferFrom","payTransferTo"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      const from = document.getElementById("payTransferFrom").value;
+      const to   = document.getElementById("payTransferTo").value;
+      if (from === to) {
+        document.getElementById("payTransferTo").value = from === "checking" ? "savings" : "checking";
+      }
+    });
+  });
+
+  /* ════════════════════════════════════════
+     TRANSFER — Income & Bills page widget
+  ════════════════════════════════════════ */
+  document.getElementById("payTransferBtn").onclick = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const from   = document.getElementById("payTransferFrom").value;
+    const to     = document.getElementById("payTransferTo").value;
+    const amount = Number(document.getElementById("payTransferAmount").value);
+    const note   = document.getElementById("payTransferNote").value;
+
+    if (!amount || amount <= 0 || from === to) return;
+
+    await addDoc(collection(db, "users", user.uid, "transactions"), {
+      type: "transfer",
+      amount,
+      transferFrom: from,
+      transferTo:   to,
+      category: `${from} → ${to}`,
+      description: `Transfer: ${from} → ${to}`,
+      note,
+      cleared: false,
+      date: serverTimestamp()
+    });
+
+    document.getElementById("payTransferAmount").value = "";
+    document.getElementById("payTransferNote").value   = "";
+  };
   /* ════════════════════════════════════════
      ADD TRANSACTION
   ════════════════════════════════════════ */
