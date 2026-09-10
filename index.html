@@ -761,12 +761,18 @@
   <p style="font-size:11px;opacity:0.4;text-align:center;margin:0;">Pick a future date to see your projected balance.</p>
 
   <input id="projDate" type="date" class="qik-input">
+
+  <label class="password-row" style="cursor:pointer;">
+    <input type="checkbox" id="projIncludeSavings">
+    <span style="font-size:12px;opacity:0.7;">Include Savings in calculation</span>
+  </label>
+
   <button id="runProjectionBtn" class="primary">Calculate</button>
 
   <div id="projOutput" style="display:none;flex-direction:column;gap:8px;">
 
     <div class="proj-result">
-      <div class="proj-label">Projected Available</div>
+      <div class="proj-label" id="projFinalLabel">Projected Available</div>
       <div id="projFinalAmt" class="proj-amount">—</div>
       <div id="projFinalSub" class="proj-sub"></div>
     </div>
@@ -1686,9 +1692,13 @@ container.appendChild(row);
       return;
     }
  
+    const includeSavings = document.getElementById("projIncludeSavings").checked;
     const balances = await calculateBalances(uid);
-    let running = balances.available;
- 
+    let running = balances.available + (includeSavings ? balances.savings : 0);
+
+    document.getElementById("projFinalLabel").textContent =
+      includeSavings ? "Projected Available (incl. Savings)" : "Projected Available";
+
     const snap  = await getDocs(collection(db, "users", uid, "recurring"));
     const items = snap.docs.map(s => ({ ...s.data(), id: s.id }));
  
@@ -1721,8 +1731,12 @@ container.appendChild(row);
       if (e.type === "income") {
         running += e.amount; totalIncome += e.amount;
       } else if (e.type === "transfer") {
-        if (e.transferFrom === "checking") running -= e.amount;
-        if (e.transferTo   === "checking") running += e.amount;
+        // When savings is included, a checking⇄savings transfer nets to zero —
+        // it only moves money between the two accounts being summed.
+        if (!includeSavings) {
+          if (e.transferFrom === "checking") running -= e.amount;
+          if (e.transferTo   === "checking") running += e.amount;
+        }
       } else {
         running -= e.amount; totalBills += e.amount;
       }
