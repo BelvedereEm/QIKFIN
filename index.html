@@ -657,7 +657,20 @@
     <select id="recurringType" class="qik-input">
       <option value="income">Income</option>
       <option value="bill">Bill</option>
+      <option value="transfer">Transfer (Checking ⇄ Savings)</option>
     </select>
+    <!-- Shown only for type=transfer -->
+    <div id="recurringTransferFields" class="transfer-row" style="display:none;">
+      <select id="recurringTransferFrom" class="qik-input">
+        <option value="checking">Checking</option>
+        <option value="savings">Savings</option>
+      </select>
+      <span class="transfer-arrow">→</span>
+      <select id="recurringTransferTo" class="qik-input">
+        <option value="savings">Savings</option>
+        <option value="checking">Checking</option>
+      </select>
+    </div>
     <input id="recurringName"   class="qik-input" placeholder="Name (Paycheck, Rent…)">
     <input id="recurringDesc"   class="qik-input" placeholder="Description (optional)">
     <input id="recurringAmount" class="qik-input" type="number" placeholder="Amount">
@@ -682,28 +695,6 @@
     <button id="saveRecurringBtn" class="primary">Add</button>
   </div>
  
-  <hr class="divider">
-
-  
-  <!-- ── Transfer Between Accounts ── -->
-  <p class="section-label" style="margin:0;">Transfer Between Accounts</p>
-  <div style="display:flex;flex-direction:column;gap:8px;">
-    <div class="transfer-row">
-      <select id="payTransferFrom" class="qik-input">
-        <option value="checking">Checking</option>
-        <option value="savings">Savings</option>
-      </select>
-      <span class="transfer-arrow">→</span>
-      <select id="payTransferTo" class="qik-input">
-        <option value="savings">Savings</option>
-        <option value="checking">Checking</option>
-      </select>
-    </div>
-    <input id="payTransferAmount" type="number" class="qik-input" placeholder="Amount">
-    <input id="payTransferNote"   class="qik-input" placeholder="Note (optional)">
-    <button id="payTransferBtn" class="primary">Transfer</button>
-  </div>
-
   <hr class="divider">
  
   <!-- List header: Name | Amt | Next | Edit | Delete -->
@@ -903,15 +894,17 @@
       let nextDate = toDate(d.nextDate);
  
       while (nextDate && nextDate <= today) {
+        const isTransfer = d.type === "transfer";
         batch.push(addDoc(collection(db, "users", uid, "transactions"), {
-          type:      d.type === "income" ? "income" : "expense",
+          type:      isTransfer ? "transfer" : (d.type === "income" ? "income" : "expense"),
           amount:    Number(d.amount),
           category:  d.name,
           description: d.name,
           note:      `Auto: ${d.frequency}`,
           source:    "recurring",
           cleared:   false,
-          date:      Timestamp.fromDate(nextDate)
+          date:      Timestamp.fromDate(nextDate),
+          ...(isTransfer ? { transferFrom: d.transferFrom, transferTo: d.transferTo } : {})
         }));
  
         // For "once", stop after posting once
@@ -1017,7 +1010,11 @@ async function calculateLeft(uid) {
       if (d > today) {   // ✅ now consistent
         if (item.type === "bill") {
           billsDue += Number(item.amount);
-        } 
+        } else if (item.type === "transfer") {
+          // Only the checking leg affects what's left to spend before payday
+          if (item.transferFrom === "checking") billsDue += Number(item.amount);
+          if (item.transferTo   === "checking") billsDue -= Number(item.amount);
+        }
       }
       d = advanceDate(d, item.frequency);
     }
@@ -1056,6 +1053,7 @@ async function loadRecurring(uid) {
     const d = docSnap.data();
     const next = toDate(d.nextDate);
     const isIncome = d.type === "income";
+    const isTransfer = d.type === "transfer";
 
     const row = document.createElement("div");
     row.className = "slim-row";
@@ -1063,8 +1061,8 @@ async function loadRecurring(uid) {
     row.innerHTML = `
       <span title="${d.name}">${d.name}</span>
 
-      <span class="amount ${isIncome ? "" : "bill"}">
-        ${isIncome ? "+" : "-"}$${Number(d.amount).toFixed(2)}
+      <span class="amount ${isTransfer ? "" : (isIncome ? "" : "bill")}" style="${isTransfer ? "color:#38bdf8;" : ""}">
+        ${isTransfer ? "⇄" : (isIncome ? "+" : "-")}$${Number(d.amount).toFixed(2)}
       </span>
 
       <span>${d.frequency}</span>
@@ -1097,6 +1095,13 @@ window.editRecurring = async (id) => {
   editingRecurringId = id;
 
   document.getElementById("recurringType").value = d.type;
+  const isTransfer = d.type === "transfer";
+  document.getElementById("recurringTransferFields").style.display = isTransfer ? "flex" : "none";
+  document.getElementById("recurringName").style.display = isTransfer ? "none" : "block";
+  if (isTransfer) {
+    document.getElementById("recurringTransferFrom").value = d.transferFrom || "checking";
+    document.getElementById("recurringTransferTo").value   = d.transferTo   || "savings";
+  }
   document.getElementById("recurringName").value = d.name;
   document.getElementById("recurringDesc").value = d.description || "";
   document.getElementById("recurringAmount").value = d.amount;
@@ -1131,6 +1136,8 @@ function resetRecurringForm() {
   editingRecurringId = null;
 
   document.getElementById("recurringType").value = "bill";
+  document.getElementById("recurringTransferFields").style.display = "none";
+  document.getElementById("recurringName").style.display = "block";
   document.getElementById("recurringName").value = "";
   document.getElementById("recurringDesc").value = "";
   document.getElementById("recurringAmount").value = "";
@@ -1147,24 +1154,31 @@ function resetRecurringForm() {
     const user = auth.currentUser;
     if (!user) return;
  
-    const type        = document.getElementById("recurringType").value;
-    const name        = document.getElementById("recurringName").value.trim();
+      const type        = document.getElementById("recurringType").value;
+    const isTransfer  = type === "transfer";
+    const transferFrom = isTransfer ? document.getElementById("recurringTransferFrom").value : null;
+    const transferTo   = isTransfer ? document.getElementById("recurringTransferTo").value   : null;
+    const name        = isTransfer
+      ? `Transfer: ${transferFrom[0].toUpperCase()}${transferFrom.slice(1)} → ${transferTo[0].toUpperCase()}${transferTo.slice(1)}`
+      : document.getElementById("recurringName").value.trim();
     const recurringDesc = document.getElementById("recurringDesc").value.trim();
     const amount      = Number(document.getElementById("recurringAmount").value);
     const dateStr     = document.getElementById("recurringDate").value;
     const frequency   = document.getElementById("recurringFrequency").value;
- 
+
     if (!name || !amount || !dateStr) return;
- 
+    if (isTransfer && transferFrom === transferTo) return;
+
     const usesDayOfWeek = frequency === "weekly" || frequency === "biweekly";
     const dayOfWeek = usesDayOfWeek
       ? Number(document.getElementById("recurringDayOfWeek").value)
       : null;
- 
+
     const data = {
       type, name, description: recurringDesc, amount, frequency,
       nextDate: Timestamp.fromDate(new Date(dateStr + "T00:00:00")),
-      ...(dayOfWeek != null ? { dayOfWeek } : {})
+      ...(dayOfWeek != null ? { dayOfWeek } : {}),
+      ...(isTransfer ? { transferFrom, transferTo } : {})
     };
  
     if (editingRecurringId) {
@@ -1185,8 +1199,10 @@ function resetRecurringForm() {
     document.getElementById("recurringAmount").value    = "";
     document.getElementById("recurringDate").value      = "";
     document.getElementById("recurringFrequency").value = "once";
+    document.getElementById("recurringTransferFields").style.display = "none";
+    document.getElementById("recurringName").style.display = "block";
     updateDayOfWeekVisibility();
- 
+
     loadRecurring(user.uid);
     calculateLeft(user.uid);
   };
@@ -1366,7 +1382,24 @@ function resetRecurringForm() {
     document.getElementById("recurringDayOfWeek").style.display = showDay ? "block" : "none";
   }
   document.getElementById("recurringFrequency").addEventListener("change", updateDayOfWeekVisibility);
- 
+
+  // Show/hide the Checking⇄Savings picker and hide Name for recurring transfers
+  document.getElementById("recurringType").addEventListener("change", function () {
+    const isTransfer = this.value === "transfer";
+    document.getElementById("recurringTransferFields").style.display = isTransfer ? "flex" : "none";
+    document.getElementById("recurringName").style.display = isTransfer ? "none" : "block";
+  });
+
+  ["recurringTransferFrom","recurringTransferTo"].forEach(id => {
+    document.getElementById(id).addEventListener("change", () => {
+      const from = document.getElementById("recurringTransferFrom").value;
+      const to   = document.getElementById("recurringTransferTo").value;
+      if (from === to) {
+        document.getElementById("recurringTransferTo").value = from === "checking" ? "savings" : "checking";
+      }
+    });
+  });
+
   document.getElementById("type").addEventListener("change", function () {
     const isTransfer = this.value === "transfer";
     document.getElementById("normalFields").style.display   = isTransfer ? "none"  : "flex";
@@ -1384,49 +1417,10 @@ function resetRecurringForm() {
   });
 
   
-  // Same from/to guard for the Income & Bills page's quick-transfer widget
-  ["payTransferFrom","payTransferTo"].forEach(id => {
-    document.getElementById(id).addEventListener("change", () => {
-      const from = document.getElementById("payTransferFrom").value;
-      const to   = document.getElementById("payTransferTo").value;
-      if (from === to) {
-        document.getElementById("payTransferTo").value = from === "checking" ? "savings" : "checking";
-      }
-    });
-  });
-
-  /* ════════════════════════════════════════
-     TRANSFER — Income & Bills page widget
-  ════════════════════════════════════════ */
-  document.getElementById("payTransferBtn").onclick = async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const from   = document.getElementById("payTransferFrom").value;
-    const to     = document.getElementById("payTransferTo").value;
-    const amount = Number(document.getElementById("payTransferAmount").value);
-    const note   = document.getElementById("payTransferNote").value;
-
-    if (!amount || amount <= 0 || from === to) return;
-
-    await addDoc(collection(db, "users", user.uid, "transactions"), {
-      type: "transfer",
-      amount,
-      transferFrom: from,
-      transferTo:   to,
-      category: `${from} → ${to}`,
-      description: `Transfer: ${from} → ${to}`,
-      note,
-      cleared: false,
-      date: serverTimestamp()
-    });
-
-    document.getElementById("payTransferAmount").value = "";
-    document.getElementById("payTransferNote").value   = "";
-  };
   /* ════════════════════════════════════════
      ADD TRANSACTION
   ════════════════════════════════════════ */
+
   document.getElementById("addTxnBtn").onclick = async () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -1710,7 +1704,8 @@ container.appendChild(row);
             name:   item.name,
             amount: Number(item.amount),
             type:   item.type,
-            date:   new Date(d)
+            date:   new Date(d),
+            ...(item.type === "transfer" ? { transferFrom: item.transferFrom, transferTo: item.transferTo } : {})
           });
         }
         d = advanceDate(d, item.frequency, item.dayOfWeek);
@@ -1723,10 +1718,15 @@ container.appendChild(row);
  
     let totalIncome = 0, totalBills = 0;
     for (const e of events) {
-      if (e.type === "income") { running += e.amount; totalIncome += e.amount; }
-      else                     { running -= e.amount; totalBills  += e.amount; }
+      if (e.type === "income") {
+        running += e.amount; totalIncome += e.amount;
+      } else if (e.type === "transfer") {
+        if (e.transferFrom === "checking") running -= e.amount;
+        if (e.transferTo   === "checking") running += e.amount;
+      } else {
+        running -= e.amount; totalBills += e.amount;
+      }
     }
- 
     const amtEl = document.getElementById("projFinalAmt");
     amtEl.textContent = fmt(running);
     amtEl.className   = "proj-amount " + (running >= 0 ? "positive" : "negative");
@@ -1748,12 +1748,13 @@ container.appendChild(row);
         const row = document.createElement("div");
         row.className = "proj-row";
         const isInc = e.type === "income";
+        const isXfer = e.type === "transfer";
         const shortDate = e.date.toLocaleDateString(undefined, { month: "numeric", day: "numeric" });
         row.innerHTML = `
           <span>${e.name}</span>
           <span class="proj-date">${shortDate}</span>
-          <span class="proj-amt ${isInc ? "inc" : "bill"}">
-            ${isInc ? "+" : "−"}$${e.amount.toFixed(2)}
+          <span class="proj-amt ${isXfer ? "" : (isInc ? "inc" : "bill")}" style="${isXfer ? "color:#38bdf8;" : ""}">
+            ${isXfer ? "⇄" : (isInc ? "+" : "−")}$${e.amount.toFixed(2)}
           </span>
         `;
         breakdown.appendChild(row);
