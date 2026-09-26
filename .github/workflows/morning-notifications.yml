@@ -9,8 +9,8 @@ on:
     # let scripts/send-notifications.js decide whether it's actually the
     # right local hour before sending anything. So this fires ~2x/day,
     # but only ever sends once.
-    - cron: "5 11 * * *" # 7:05am EDT (roughly Mar–Nov)
-    - cron: "5 12 * * *" # 7:05am EST (roughly Nov–Mar)
+    - cron: "30 8 * * *"  # 4:30am EDT (roughly Mar–Nov)
+    - cron: "30 9 * * *"  # 4:30am EST (roughly Nov–Mar)
 
   # Adds a "Run workflow" button under the Actions tab, so you can test
   # immediately instead of waiting for the schedule. Manual runs always
