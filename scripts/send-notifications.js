@@ -106,4 +106,115 @@ function buildNotificationBody(recurringItems) {
   const lines = [];
   if (todayItems.length) {
     lines.push("Due today:");
-    todayItem
+    todayItems.forEach(i => lines.push(`${i.label} ${i.name} ${i.amount}`));
+  }
+  if (tomorrowItems.length) {
+    if (lines.length) lines.push("");
+    lines.push("Due tomorrow:");
+    tomorrowItems.forEach(i => lines.push(`${i.label} ${i.name} ${i.amount}`));
+  }
+
+  return lines.join("\n");
+}
+
+async function main() {
+  const forceSend = process.env.FORCE_SEND === "true"; // set by workflow_dispatch runs
+  if (!forceSend && !isMorningWindowET()) {
+    console.log("[QikFin] Not the Eastern morning window yet — skipping this run.");
+    return;
+  }
+
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+  const vapidSubject = process.env.VAPID_SUBJECT;
+
+  if (!serviceAccountJson || !vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
+    throw new Error(
+      "Missing required secrets. Need FIREBASE_SERVICE_ACCOUNT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT."
+    );
+  }
+
+  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+
+  admin.initializeApp({
+    credential: admin.credential.cert(JSON.parse(serviceAccountJson))
+  });
+  const db = admin.firestore();
+
+  // Enumerate real accounts via Firebase Auth rather than listing the
+  // Firestore "users" collection. Firestore only lists documents that
+  // actually have data written to them at that exact path — if a user's
+  // own users/{uid} doc was never written (only subcollections under it),
+  // db.collection("users").get() silently skips them even though their
+  // data exists. Auth's listUsers() is the real, complete source of truth
+  // for "who has an account."
+  const allUids = [];
+  let pageToken;
+  do {
+    const page = await admin.auth().listUsers(1000, pageToken);
+    page.users.forEach(u => allUids.push(u.uid));
+    pageToken = page.pageToken;
+  } while (pageToken);
+
+  console.log(`[QikFin] Checking ${allUids.length} user(s)...`);
+
+  let sent = 0;
+  let removed = 0;
+
+  for (const uid of allUids) {
+    const recurringSnap = await db.collection("users").doc(uid).collection("recurring").get();
+    if (recurringSnap.empty) {
+      console.log(`[QikFin] User ${uid}: no recurring items at all — skipping.`);
+      continue;
+    }
+
+    const recurringItems = recurringSnap.docs.map(d => d.data());
+    const body = buildNotificationBody(recurringItems);
+    if (!body) {
+      console.log(`[QikFin] User ${uid}: has ${recurringItems.length} recurring item(s), but none due today/tomorrow — skipping.`);
+      continue;
+    }
+
+    const subsSnap = await db.collection("users").doc(uid).collection("pushSubscriptions").get();
+    if (subsSnap.empty) {
+      console.log(`[QikFin] User ${uid}: has something due, but NO saved push subscription — skipping. (Re-check that the home screen app granted notification permission.)`);
+      continue;
+    }
+    console.log(`[QikFin] User ${uid}: sending to ${subsSnap.size} subscription(s)...`);
+
+    const payload = JSON.stringify({
+      title: "QIKFIN — Morning Update",
+      body,
+      tag: "qikfin-morning",
+      url: "/QIKFIN/"
+    });
+
+    for (const subDoc of subsSnap.docs) {
+      const sub = subDoc.data();
+      const pushSubscription = { endpoint: sub.endpoint, keys: sub.keys };
+
+      try {
+        await webpush.sendNotification(pushSubscription, payload);
+        sent++;
+      } catch (err) {
+        // 404/410 = the subscription is gone (user uninstalled, revoked
+        // permission, etc.) — clean it up so we stop trying forever.
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          await subDoc.ref.delete();
+          removed++;
+          console.log(`[QikFin] Removed dead subscription for user ${uid}`);
+        } else {
+          console.error(`[QikFin] Push failed for user ${uid}:`, err.statusCode, err.body || err.message);
+        }
+      }
+    }
+  }
+
+  console.log(`[QikFin] Done. Sent ${sent} notification(s), removed ${removed} dead subscription(s).`);
+}
+
+main().catch(err => {
+  console.error("[QikFin] Fatal error:", err);
+  process.exit(1);
+});
