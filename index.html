@@ -1841,11 +1841,70 @@ async function requestNotificationPermission(uid) {
   if (!("Notification" in window)) return;
   if (Notification.permission === "granted") {
     triggerNotificationCheck(uid);
+    subscribeToPush(uid);
     return;
   }
   if (Notification.permission !== "denied") {
     const permission = await Notification.requestPermission();
-    if (permission === "granted") triggerNotificationCheck(uid);
+    if (permission === "granted") {
+      triggerNotificationCheck(uid);
+      subscribeToPush(uid);
+    }
+  }
+}
+
+/* ═══════════════════════════════════════════
+   REAL PUSH SUBSCRIPTION (works even when the
+   app/phone is closed or locked — this is what
+   the morning GitHub Action sends to)
+═══════════════════════════════════════════ */
+
+// Public VAPID key — safe to expose in client code.
+// The matching PRIVATE key lives only as a GitHub Actions secret, never here.
+const VAPID_PUBLIC_KEY = "BJx4PZV9-Q96CAD7VKktMubiJ4sLaLuctzEMvEzM-65kIaluXl3SmehsYOXqqWCEeaY-kb-S28Qis8e5ye8U5Zw";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; i++) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function subscribeToPush(uid) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    console.warn("[QikFin] Push not supported on this browser/device.");
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    const subJson = sub.toJSON();
+
+    // Dedupe on endpoint so re-subscribing (or opening on the same device
+    // twice) doesn't create duplicate rows the sender would notify twice.
+    const existing = await getDocs(collection(db, "users", uid, "pushSubscriptions"));
+    const already = existing.docs.find(d => d.data().endpoint === subJson.endpoint);
+    if (already) return;
+
+    await addDoc(collection(db, "users", uid, "pushSubscriptions"), {
+      endpoint: subJson.endpoint,
+      keys: subJson.keys,
+      createdAt: serverTimestamp(),
+      userAgent: navigator.userAgent
+    });
+    console.log("[QikFin] Push subscription saved.");
+  } catch (err) {
+    console.error("[QikFin] Push subscription failed:", err);
   }
 }
 

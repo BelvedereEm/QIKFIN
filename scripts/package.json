@@ -1,0 +1,11 @@
+{
+  "name": "qikfin-notification-sender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Server-side script run by GitHub Actions to send QikFin's daily push notifications.",
+  "main": "send-notifications.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "web-push": "^3.6.7"
+  }
+}

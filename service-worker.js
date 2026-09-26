@@ -30,21 +30,49 @@ self.addEventListener("activate", e => e.waitUntil(clients.claim()));
 ═══════════════════════════════════════════ */
 self.addEventListener("notificationclick", e => {
   e.notification.close();
+  const url = e.notification.data?.url || "/QIKFIN/";
   e.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then(list => {
       if (list.length > 0) return list[0].focus();
-      return clients.openWindow("/QIKFIN/");
+      return clients.openWindow(url);
     })
   );
 });
 
 /* ═══════════════════════════════════════════
    MESSAGE FROM APP — trigger a check
+   (only fires while the app is open — kept for
+   the in-app "check now" experience)
 ═══════════════════════════════════════════ */
 self.addEventListener("message", e => {
   if (e.data?.type === "CHECK_NOTIFICATIONS") {
     checkAndNotify(e.data.uid, e.data.items);
   }
+});
+
+/* ═══════════════════════════════════════════
+   REAL PUSH EVENT — fires from Apple/Google's
+   push service even when the phone is locked and
+   QikFin isn't running. Sent by
+   scripts/send-notifications.js via GitHub Actions.
+═══════════════════════════════════════════ */
+self.addEventListener("push", e => {
+  let payload = {};
+  try { payload = e.data ? e.data.json() : {}; } catch (err) { /* not JSON, ignore */ }
+
+  const title = payload.title || "QIKFIN";
+  const body  = payload.body  || "You have upcoming transactions.";
+
+  e.waitUntil(
+    self.registration.showNotification(title, {
+      body,
+      icon: "/QIKFIN/QikFin-Logo.png",
+      badge: "/QIKFIN/apple-touch-icon.png",
+      tag: payload.tag || "qikfin-morning",
+      renotify: true,
+      data: { url: payload.url || "/QIKFIN/" }
+    })
+  );
 });
 
 /* ═══════════════════════════════════════════
