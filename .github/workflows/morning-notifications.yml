@@ -1,0 +1,44 @@
+name: QikFin Morning Notifications
+
+on:
+  schedule:
+    # GitHub Actions cron is UTC-only and does NOT reliably support IANA
+    # timezones, and the US Eastern UTC offset changes twice a year with
+    # DST. Rather than fight that, we run at BOTH times that could be
+    # 7:05am Eastern (EDT = UTC-4 in summer, EST = UTC-5 in winter) and
+    # let scripts/send-notifications.js decide whether it's actually the
+    # right local hour before sending anything. So this fires ~2x/day,
+    # but only ever sends once.
+    - cron: "5 11 * * *" # 7:05am EDT (roughly Mar–Nov)
+    - cron: "5 12 * * *" # 7:05am EST (roughly Nov–Mar)
+
+  # Adds a "Run workflow" button under the Actions tab, so you can test
+  # immediately instead of waiting for the schedule. Manual runs always
+  # send (they skip the morning-hour check).
+  workflow_dispatch:
+
+jobs:
+  send-notifications:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: scripts
+        run: npm install
+
+      - name: Send morning notifications
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          FORCE_SEND: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+        run: node send-notifications.js
