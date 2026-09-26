@@ -27,10 +27,6 @@ by:
 ### 1. Generate VAPID keys (or use these — see note below)
 A VAPID key pair was already generated for you during setup:
 
-```
-Public:  BJx4PZV9-Q96CAD7VKktMubiJ4sLaLuctzEMvEzM-65kIaluXl3SmehsYOXqqWCEeaY-kb-S28Qis8e5ye8U5Zw
-Private: xhHxudta8lEztnbFEk7rtQeQp38GGM8zfMNsdgXOzIo
-```
 
 The **public** key is already in `index.html` (safe — it's meant to be
 public). The **private** key must never be committed to git — it only
