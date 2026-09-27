@@ -19,3 +19,4 @@ Allow Notifications! (4:30AM EST Notifications each morning)
 
 Have fun!
 Let me know for suggestions. 
+<img width="440" height="528" alt="image" src="https://github.com/user-attachments/assets/68a20189-a2b0-4a00-9d85-36a080d6771e" />
