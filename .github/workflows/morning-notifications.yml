@@ -2,20 +2,13 @@ name: QikFin Morning Notifications
 
 on:
   schedule:
-    # GitHub Actions cron is UTC-only and does NOT reliably support IANA
-    # timezones, and the US Eastern UTC offset changes twice a year with
-    # DST. Rather than fight that, we run at BOTH times that could be
-    # 7:05am Eastern (EDT = UTC-4 in summer, EST = UTC-5 in winter) and
-    # let scripts/send-notifications.js decide whether it's actually the
-    # right local hour before sending anything. So this fires ~2x/day,
-    # but only ever sends once.
     - cron: "30 8 * * *"  # 4:30am EDT (roughly Mar–Nov)
     - cron: "30 9 * * *"  # 4:30am EST (roughly Nov–Mar)
 
-  # Adds a "Run workflow" button under the Actions tab, so you can test
-  # immediately instead of waiting for the schedule. Manual runs always
-  # send (they skip the morning-hour check).
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   send-notifications:
