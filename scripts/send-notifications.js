@@ -35,7 +35,7 @@ function isMorningWindowET() {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "2-digit", hour12: false }).format(new Date())
   );
-  // Runs the send if the current Eastern hour is 7 (7:00–7:59am ET).
+  // Runs the send if the current Eastern hour is 4 (4:00–4:59am ET).
   return hour === 4;
 }
 
