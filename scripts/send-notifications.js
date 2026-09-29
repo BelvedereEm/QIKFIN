@@ -35,8 +35,8 @@ function isMorningWindowET() {
   const hour = Number(
     new Intl.DateTimeFormat("en-US", { timeZone: TIMEZONE, hour: "2-digit", hour12: false }).format(new Date())
   );
-  // Runs the send if the current Eastern hour is 4 (4:00–4:59am ET).
-  return hour === 4;
+  // Runs the send if the current Eastern hour is 7 (7:00–7:59am ET).
+  return hour === 7;
 }
 
 function toDate(val) {
@@ -198,12 +198,30 @@ async function main() {
         await webpush.sendNotification(pushSubscription, payload);
         sent++;
       } catch (err) {
-        // 404/410 = the subscription is gone (user uninstalled, revoked
-        // permission, etc.) — clean it up so we stop trying forever.
-        if (err.statusCode === 404 || err.statusCode === 410) {
+        // A subscription can become permanently unusable in a few ways,
+        // and none of them will ever succeed on retry — so in every case
+        // below, delete it immediately rather than silently failing every
+        // single morning forever. Someone whose subscription quietly dies
+        // (phone reset, app reinstalled, VAPID keys rotated, etc.) may
+        // never think to check — self-healing here means one bad morning
+        // at worst, not an indefinitely silent failure nobody notices.
+        //
+        // 404/410 = the push service says the subscription is just gone
+        // (uninstalled, permission revoked, endpoint expired).
+        //
+        // 400 VapidPkHashMismatch = this subscription was created under a
+        // DIFFERENT VAPID key than the one we're currently signing with
+        // (e.g. after a key rotation) — permanently unusable until the
+        // device resubscribes fresh, which deleting the doc encourages
+        // (the app will treat it as never-subscribed next time).
+        const body = err.body || "";
+        const isDead = err.statusCode === 404 || err.statusCode === 410;
+        const isKeyMismatch = err.statusCode === 400 && /VapidPkHashMismatch/i.test(body);
+
+        if (isDead || isKeyMismatch) {
           await subDoc.ref.delete();
           removed++;
-          console.log(`[QikFin] Removed dead subscription for user ${uid}`);
+          console.log(`[QikFin] Removed unusable subscription for user ${uid} (${isKeyMismatch ? "key mismatch" : "dead"}) — they'll get a fresh one next time they open the app.`);
         } else {
           console.error(`[QikFin] Push failed for user ${uid}:`, err.statusCode, err.body || err.message);
         }
