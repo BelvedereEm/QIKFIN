@@ -101,7 +101,9 @@ function buildNotificationBody(recurringItems) {
     }
   });
 
-  if (todayItems.length === 0 && tomorrowItems.length === 0) return null;
+  if (todayItems.length === 0 && tomorrowItems.length === 0) {
+    return "Nothing due today or tomorrow.";
+  }
 
   const lines = [];
   if (todayItems.length) {
@@ -170,21 +172,21 @@ async function main() {
     }
 
     const recurringItems = recurringSnap.docs.map(d => d.data());
+    // Always sends now, even when nothing's due — buildNotificationBody()
+    // returns "Nothing due today or tomorrow." in that case instead of
+    // null, so everyone gets a consistent morning notification rather
+    // than sometimes getting one and sometimes not.
     const body = buildNotificationBody(recurringItems);
-    if (!body) {
-      console.log(`[QikFin] User ${uid}: has ${recurringItems.length} recurring item(s), but none due today/tomorrow — skipping.`);
-      continue;
-    }
 
     const subsSnap = await db.collection("users").doc(uid).collection("pushSubscriptions").get();
     if (subsSnap.empty) {
-      console.log(`[QikFin] User ${uid}: has something due, but NO saved push subscription — skipping. (Re-check that the home screen app granted notification permission.)`);
+      console.log(`[QikFin] User ${uid}: has a morning update, but NO saved push subscription — skipping. (Re-check that the home screen app granted notification permission.)`);
       continue;
     }
     console.log(`[QikFin] User ${uid}: sending to ${subsSnap.size} subscription(s)...`);
 
     const payload = JSON.stringify({
-      title: "QIKFIN — Morning Update",
+      title: "Morning Update",
       body,
       tag: "qikfin-morning",
       url: "/QIKFIN/"
